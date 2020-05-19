@@ -1,5 +1,5 @@
-# Start with a base Python 3.7.7 image
-FROM python:3.7.7
+# Start with a base Python 3.7 image that has chromedriver installed
+FROM joyzoursky/python-chromedriver:3.7
 
 # Add the external tasks directory into /tasks
 ADD locust-tasks /locust-tasks
