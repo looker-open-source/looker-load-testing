@@ -1,14 +1,27 @@
 from realbrowserlocusts import HeadlessChromeLocust
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-from locust import TaskSet, task, between
+from locust import task, between
 import configparser
 
 
 SITE = "https://jcp-dev.lookersandbox.com"
 
 
-class LocustUserBehavior(TaskSet):
+class LocustUser(HeadlessChromeLocust):
+
+    host = "dashboard load test"
+    timeout = 30  # in seconds in waitUntil thingies
+    wait_time = between(2, 5)
+    screen_width = 1200
+    screen_height = 600
+
+    @task(1)
+    def simple_dashboard_loading(self):
+        self.client.timed_event_for_locust(
+            "Load", "dashboard",
+            self.open_dashboard
+        )
 
     def on_start(self):
         self.login()
@@ -38,23 +51,6 @@ class LocustUserBehavior(TaskSet):
                 (By.ID, "lk-dashboard-container")
             )
         )
-
-    @task(1)
-    def simple_dashboard_loading(self):
-        self.client.timed_event_for_locust(
-            "Load", "dashboard",
-            self.open_dashboard
-        )
-
-
-class LocustUser(HeadlessChromeLocust):
-
-    host = "dashboard load test"
-    timeout = 30  # in seconds in waitUntil thingies
-    wait_time = between(2, 5)
-    screen_width = 1200
-    screen_height = 600
-    task_set = LocustUserBehavior
 
 
 def parse_website_creds(site, ini="looker.ini"):
