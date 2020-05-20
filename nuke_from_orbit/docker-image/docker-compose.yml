@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  master:
+    build: .
+    ports:
+      - "8089:8089"
+    environment:
+      - TARGET_HOST=foo
+      - LOCUST_MODE=master
+  
+  worker:
+    build: .
+    environment:
+      - TARGET_HOST=foo
+      - LOCUST_MODE=worker
+      - LOCUST_MASTER_HOST=master
