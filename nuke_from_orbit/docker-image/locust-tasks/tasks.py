@@ -1,8 +1,8 @@
+import os
 from realbrowserlocusts import HeadlessChromeLocust
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from locust import TaskSet, task, between
-import configparser
 
 
 SITE = "https://jcp-dev.lookersandbox.com"
@@ -18,8 +18,9 @@ class LocustUserBehavior(TaskSet):
 
     def login(self):
         self.client.get(SITE + "/login")
-        user_entry, pass_entry = parse_website_creds(SITE.partition("//")[2])
 
+        user_entry = os.getenv("USERNAME")
+        pass_entry = os.getenv("PASS")
         username = self.client.find_element_by_id("login-email")
         pw = self.client.find_element_by_id("login-password")
         username.clear()
@@ -55,10 +56,3 @@ class LocustUser(HeadlessChromeLocust):
     screen_width = 1200
     screen_height = 600
     task_set = LocustUserBehavior
-
-
-def parse_website_creds(site, ini="looker.ini"):
-    config = configparser.ConfigParser()
-    config.read(ini)
-    web_creds = config[site]
-    return (web_creds["username"], web_creds["password"])
