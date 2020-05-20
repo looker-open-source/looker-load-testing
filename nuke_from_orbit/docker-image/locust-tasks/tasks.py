@@ -1,27 +1,14 @@
+import os
 from realbrowserlocusts import HeadlessChromeLocust
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-from locust import task, between
-import configparser
+from locust import TaskSet, task, between
 
 
 SITE = "https://jcp-dev.lookersandbox.com"
 
 
-class LocustUser(HeadlessChromeLocust):
-
-    host = "dashboard load test"
-    timeout = 30  # in seconds in waitUntil thingies
-    wait_time = between(2, 5)
-    screen_width = 1200
-    screen_height = 600
-
-    @task(1)
-    def simple_dashboard_loading(self):
-        self.client.timed_event_for_locust(
-            "Load", "dashboard",
-            self.open_dashboard
-        )
+class LocustUserBehavior(TaskSet):
 
     def on_start(self):
         self.login()
@@ -31,8 +18,9 @@ class LocustUser(HeadlessChromeLocust):
 
     def login(self):
         self.client.get(SITE + "/login")
-        user_entry, pass_entry = parse_website_creds(SITE.partition("//")[2])
 
+        user_entry = os.getenv("USERNAME")
+        pass_entry = os.getenv("PASS")
         username = self.client.find_element_by_id("login-email")
         pw = self.client.find_element_by_id("login-password")
         username.clear()
@@ -52,9 +40,19 @@ class LocustUser(HeadlessChromeLocust):
             )
         )
 
+    @task(1)
+    def simple_dashboard_loading(self):
+        self.client.timed_event_for_locust(
+            "Load", "dashboard",
+            self.open_dashboard
+        )
 
-def parse_website_creds(site, ini="looker.ini"):
-    config = configparser.ConfigParser()
-    config.read(ini)
-    web_creds = config[site]
-    return (web_creds["username"], web_creds["password"])
+
+class LocustUser(HeadlessChromeLocust):
+
+    host = "dashboard load test"
+    timeout = 30  # in seconds in waitUntil thingies
+    wait_time = between(2, 5)
+    screen_width = 1200
+    screen_height = 600
+    task_set = LocustUserBehavior
