@@ -1,9 +1,9 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: locust-master
+  name: lm-pod
   labels:
-    app: locust-master
+    app: lm-pod
 spec:
   ports:
     - port: 8089
@@ -19,5 +19,5 @@ spec:
       protocol: TCP
       name: loc-master-p2
   selector:
-    app: locust-master
+    app: lm-pod
   type: LoadBalancer

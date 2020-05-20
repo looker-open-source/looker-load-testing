@@ -1,26 +1,26 @@
-apiVersion: "extensions/v1beta1"
+apiVersion: apps/v1
 kind: "Deployment"
 metadata:
-  name: locust-worker
+  name: lw-pod
   labels:
-    name: locust-worker
+    name: lw-pod
 spec:
   replicas: 5
   selector:
     matchLabels:
-      app: locust-worker
+      app: lw-pod
   template:
     metadata:
       labels:
-        app: locust-worker
+        app: lw-pod
     spec:
       containers:
-        - name: locust-worker
-          image: gcr.io/[PROJECT_ID]/locust-tasks:latest
+        - name: lw-prod
+          image: gcr.io/turing-link-260817/locust-tasks:latest
           env:
             - name: LOCUST_MODE
               value: worker
-            - name: LOCUST_MASTER
-              value: locust-master
+            - name: LOCUST_MASTER_HOST
+              value: lm-pod
             - name: TARGET_HOST
-              value: https://[TARGET_HOST]
+              value: foo

@@ -1,27 +1,27 @@
-apiVersion: "extensions/v1beta1"
+apiVersion: apps/v1
 kind: "Deployment"
 metadata:
-  name: locust-master
+  name: lm-pod
   labels:
-    name: locust-master
+    name: lm-pod
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: locust-master
+      app: lm-pod
   template:
     metadata:
       labels:
-        app: locust-master
+        app: lm-pod
     spec:
       containers:
-        - name: locust-master
-          image: gcr.io/[PROJECT_ID]/locust-tasks:latest
+        - name: lm-pod
+          image: gcr.io/turing-link-260817/locust-tasks:latest
           env:
             - name: LOCUST_MODE
               value: master
             - name: TARGET_HOST
-              value: https://[TARGET_HOST]
+              value: foo
           ports:
             - name: loc-master-web
               containerPort: 8089
