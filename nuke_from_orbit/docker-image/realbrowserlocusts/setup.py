@@ -2,7 +2,7 @@ from setuptools import setup
 
 NAME = "realbrowserlocusts"
 VERSION = "0.4.1"
-REQUIRES = ["locust", "selenium"]
+REQUIRES = ["locustio==0.8a2", "selenium==3.4.1"]
 
 setup(
     name=NAME,

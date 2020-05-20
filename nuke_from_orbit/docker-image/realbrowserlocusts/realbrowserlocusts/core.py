@@ -3,7 +3,7 @@
 import time
 from selenium.webdriver.support.ui import WebDriverWait
 from locust import events
-from locust.exception import LocustError
+from locust.exception import StopLocust
 
 
 def wrap_for_locust(request_type, name, func, *args, **kwargs):
@@ -28,7 +28,7 @@ def wrap_for_locust(request_type, name, func, *args, **kwargs):
             response_length=0,
             exception=event_exception
         )
-        raise LocustError()
+        raise StopLocust()
     else:
         total_time = int((time.time() - start_time) * 1000)
         events.request_success.fire(
@@ -72,9 +72,8 @@ class RealBrowserClient(object):
             an exception
 
         Raises:
-            LocustError: this used to be StopLocust, but that seems to have been
-            depricated. Whenever func raises an exception, this exception is
-            catched, logged to locust as a failure and a LocustError exception
+            StopLocust: whenever func raises an exception, this exception is
+            catched, logged to locust as a failure and a StopLocust exception
             is raised.
         """
         return wrap_for_locust(request_type, message, func, *args, **kwargs)
