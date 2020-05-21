@@ -24,3 +24,13 @@ spec:
               value: lm-pod
             - name: TARGET_HOST
               value: foo
+            - name: USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: website-creds
+                  key: username
+            - name: PASS
+              valueFrom:
+                secretKeyRef:
+                  name: website-creds
+                  key: password

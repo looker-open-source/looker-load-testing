@@ -22,6 +22,16 @@ spec:
               value: master
             - name: TARGET_HOST
               value: foo
+            - name: USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: website-creds
+                  key: username
+            - name: PASS
+              valueFrom:
+                secretKeyRef:
+                  name: website-creds
+                  key: password
           ports:
             - name: loc-master-web
               containerPort: 8089
