@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: lw-prod
-          image: gcr.io/turing-link-260817/locust-tasks:latest
+          image: gcr.io/[PROJECT_ID]/locust-tasks:latest
           env:
             - name: LOCUST_MODE
               value: worker
