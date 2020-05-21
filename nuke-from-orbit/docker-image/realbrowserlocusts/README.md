@@ -1,11 +1,12 @@
 # Real Browser support for Locust.io load testing
 
+This is a modified local copy of the realbrowserlocust package available on pip. Some changes had to be made to allow
+for Chrome to run in a docker container. The original repo can be found
+  [here.](https://github.com/nickboucart/realbrowserlocusts)
+
+The original readme is below:
+
 This python package provides different Locusts that represent real browsers. This package is a thin wrapper around (parts of) Selenium Webdriver.
-
-
-Installation via pip
-
-    pip install realbrowserlocusts
 
 Once installed, simple make a locustfile.py as per usual, but instead of inheriting your locust from HttpLocust, instantiate a FirefoxLocust, ChromeLocust, HeadlessChromeLocust or PhantomJSLocust as you which.
 

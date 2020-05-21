@@ -1,11 +1,14 @@
 ## Introduction
 
-![nuke_from_orbit](https://i.imgflip.com/1o9ejc.jpg)
+![nuke-from-orbit](https://i.imgflip.com/1o9ejc.jpg)
 
 Sometimes you need a little more boom, so let's rain fire from the clouds... it's the only way to be sure.
 
 This section contains a framework for a kubernetes-based distributed locustio cluster. Provided is an example of how to run a "real browser" based test of a
 looker dashboard.
+
+This is heavily derived from the official GCP locust/kubernetes tutorial, which can be found
+[here.](https://cloud.google.com/solutions/distributed-load-testing-using-gke)
 
 The instructions below are for GCP, but this can be run on any Kubernetes cluster in any environment. At a high level
 the steps are:
