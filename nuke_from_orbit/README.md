@@ -2,7 +2,7 @@
 
 ## Introduction
 
-![nuke_from_orbit](https://gfycat.com/farfavoriteconey)
+![nuke_from_orbit](https://thumbs.gfycat.com/FarFavoriteConey-max-1mb.gif)
 
 A kubernetes-based distributed locustio cluster. Provided is an example of how to run a "real browser" based test of a
 looker dashboard.
