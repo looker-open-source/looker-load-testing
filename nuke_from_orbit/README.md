@@ -2,9 +2,13 @@
 
 ## Introduction
 
-Load testing is key to the development of any backend infrastructure because load tests demonstrate how well the system functions when faced with real-world demands. An important aspect of load testing is the proper simulation of user and device behavior to identify and understand any possible system bottlenecks, well in advance of deploying applications to production.
+!(nuke_from_orbit)[https://gfycat.com/farfavoriteconey]
 
-However, dedicated test infrastructure can be expensive and difficult to maintain because it is not needed on a continuous basis. Moreover, dedicated test infrastructure is often a one-time capital expense with a fixed capacity, which makes it difficult to scale load testing beyond the initial investment and can limit experimentation. This can lead to slowdowns in productivity for development teams and lead to applications that are not properly tested before production deployments.
+A kubernetes-based distributed locustio cluster. Provided is an example of how to run a "real browser" based test of a
+looker dashboard.
+
+The instructions below are for GCP, but this can be run on any Kubernetes cluster in any environment.
+
 
 ## Before you begin
 
@@ -32,39 +36,6 @@ Cloud Storage
         container.googleapis.com \
         containeranalysis.googleapis.com \
         containerregistry.googleapis.com 
-
-## Load testing tasks
-
-To deploy the load testing tasks, you first deploy a load testing master and then deploy a group of load testing workers. With these load testing workers, you can create a substantial amount of traffic for testing purposes. 
-
-**Note:** Keep in mind that generating excessive amounts of traffic to external systems can resemble a denial-of-service attack. Be sure to review the Google Cloud Platform Terms of Service and the Google Cloud Platform Acceptable Use Policy.
-
-## Load testing master
-
-The first component of the deployment is the Locust master, which is the entry point for executing the load testing tasks described above. The Locust master is deployed with a single replica because we need only one master. 
-
-The configuration for the master deployment specifies several elements, including the ports that need to be exposed by the container (`8089` for web interface, `5557` and `5558` for communicating with workers). This information is later used to configure the Locust workers. The following snippet contains the configuration for the ports:
-
-    ports:
-       - name: loc-master-web
-         containerPort: 8089
-         protocol: TCP
-       - name: loc-master-p1
-         containerPort: 5557
-         protocol: TCP
-       - name: loc-master-p2
-         containerPort: 5558
-         protocol: TCP
-
-Next, we would deploy a Service to ensure that the exposed ports are accessible to other pods via `hostname:port` within the cluster, and referenceable via a descriptive port name. The use of a service allows the Locust workers to easily discover and reliably communicate with the master, even if the master fails and is replaced with a new pod by the deployment. The Locust master service also includes a directive to create an external forwarding rule at the cluster level (i.e. type of LoadBalancer), which provides the ability for external traffic to access the cluster resources. 
-
-After you deploy the Locust master, you can access the web interface using the public IP address of the external forwarding rule. After you deploy the Locust workers, you can start the simulation and look at aggregate statistics through the Locust web interface.
-
-## Load testing workers
-
-The next component of the deployment includes the Locust workers, which execute the load testing tasks described above. The Locust workers are deployed by a single deployment that creates multiple pods. The pods are spread out across the Kubernetes cluster. Each pod uses environment variables to control important configuration information such as the hostname of the system under test and the hostname of the Locust master. 
-
-After the Locust workers are deployed, you can return to the Locust master web interface and see that the number of slaves corresponds to the number of deployed workers.
 
 ## Setup
 
@@ -125,9 +96,3 @@ Scaling up the number of simulated users will require an increase in the number 
 ## Cleaning up
 
     $ gcloud container clusters delete $CLUSTER --zone $ZONE
-
-## License
-
-This code is Apache 2.0 licensed and more information can be found in `LICENSE`. For information on licenses for third party software and libraries, refer to the `docker-image/licenses` directory.
-
-
