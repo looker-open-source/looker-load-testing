@@ -6,14 +6,14 @@ Selenium. An example file suitable for local testing is provided here and a scal
 found in [nuke-from-orbit](/nuke-from-orbit).
 
 This system makes use of [LocustIO](https://locust.io/) to coordinate and report on load testing. The key concept here is each test is
-defined in a python script that defines the test itself as well as setup and teardown proceedures (e.g. logging in,
+defined in a python script that defines the test itself as well as setup and teardown procedures (e.g. logging in,
 logging out, etc.) Think of each script as a manifest for a specific test. The advantage of defining tests in code is
 they are extremely flexible, meaning you can encapsulate just about any test scenario you need.
 
 ## Local Testing
 
 The Pipfile and locustfile in this directory can be used for local testing. Install the python dependencies using
-[Pipenv](https://pipenv.pypa.io/en/latest/) by involking `pipenv install --ignore-pipfile`
+[Pipenv](https://pipenv.pypa.io/en/latest/) by invoking `pipenv install --ignore-pipfile`
 
 Then, modify `locustfile.py` to match your testing criteria. Some things you will want to change are the `SITE` and
 `DASH_ID` global variables and the `timeout` and `wait_time` arguments in the `LocustUser` class.
@@ -27,7 +27,7 @@ username=name@company.com
 password=abc123
 ```
 
-When your `locustfile.py` and `looker.ini` files are in order, kick off the test by involking `locust` from the command
+When your `locustfile.py` and `looker.ini` files are in order, kick off the test by invoking `locust` from the command
 line. Then, in a browser, navigate to `localhost:8089` and initiate the test.
 
 
