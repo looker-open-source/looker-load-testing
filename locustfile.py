@@ -6,6 +6,7 @@ import configparser
 
 
 SITE = "https://jcp-dev.lookersandbox.com"
+DASH_ID = 8
 
 
 class LocustUserBehavior(TaskSet):
@@ -32,10 +33,19 @@ class LocustUserBehavior(TaskSet):
         print("stopping session")
 
     def open_dashboard(self):
-        self.client.get("https://jcp-dev.lookersandbox.com/embed/dashboards/8")
+
+        script = """
+        document.addEventListener('dashboard.rendered', function() {
+            var dash_render = document.createElement("div");
+            dash_render.id = "dash_listener";
+            document.body.appendChild(dash_render);
+        }, false);"""
+
+        self.client.get(f"{SITE}/embed/dashboards/{str(DASH_ID)}")
+        self.client.execute_script(script)
         self.client.wait.until(
-            EC.visibility_of_element_located(
-                (By.ID, "lk-dashboard-container")
+            EC.presence_of_element_located(
+                (By.ID, "dash_listener")
             )
         )
 
