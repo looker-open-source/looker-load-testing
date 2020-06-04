@@ -1,2 +1,3 @@
 looker.ini
 docker-compose.yml
+.env
