@@ -17,6 +17,13 @@ spec:
       containers:
         - name: lw-prod
           image: gcr.io/[PROJECT_ID]/locust-tasks:latest
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "1"
+            limits:
+              memory: "4Gi"
+              cpu: "2"
           env:
             - name: LOCUST_MODE
               value: worker
