@@ -1,5 +1,5 @@
 import os
-from realbrowserlocusts import HeadlessChromeLocust, ChromeLocust
+from realbrowserlocusts import HeadlessChromeLocust
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
@@ -44,11 +44,6 @@ class LocustUserBehavior(TaskSet):
 
         try:
             self.client.get(f"{SITE}/embed/dashboards/{str(DASH_ID)}")
-            self.client.wait.until(
-                EC.presence_of_element_located(
-                    (By.ID, "lk-dashboard-container")
-                )
-            )
 
             self.client.execute_script(script)
 
@@ -68,7 +63,7 @@ class LocustUserBehavior(TaskSet):
         )
 
 
-class LocustUser(ChromeLocust):
+class LocustUser(HeadlessChromeLocust):
 
     host = "dashboard load test"
     timeout = 10  # in seconds in waitUntil thingies
