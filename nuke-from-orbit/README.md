@@ -22,7 +22,7 @@ the steps are:
 Running headless browsers is a CPU-bound process. For this reason, if you are trying to time dashboard load times with Selenium I strongly recommend using CPU-optimized 
 machine types for your nodes. The example below uses the default N1 machine types for demonstration purposes. A reading of the Kubernetes deployment config files reveals 
 that the worker pods request 1 core. A good rule of thumb is each worker can simulate 2 real browsers with 1 core, so if you wanted to simulate 20 browsers you will need 
-approximately 40 cores in your cluster. (probably slightly more to handle some overhead - e.g. The master pod itself requires comparitively few resources, but still 
+approximately 10 cores in your cluster. (probably slightly more to handle some overhead - e.g. The master pod itself requires comparitively few resources, but still 
 needs some) Attempting to run workers with less CPU will result in degraded dashboard loading performance, leading to incorrect test results, as well as risk of pod eviction.
 
 One more note: For these tests, one browser does not equal one user - each browser can make a new dashboard request
