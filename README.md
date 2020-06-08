@@ -18,13 +18,17 @@ The Pipfile and locustfile in this directory can be used for local testing. Inst
 Then, modify `locustfile.py` to match your testing criteria. Some things you will want to change are the `SITE` and
 `DASH_ID` global variables and the `timeout` and `wait_time` arguments in the `LocustUser` class.
 
-This local version expects a `looker.ini` file to be present in this directory. This file is used to store Looker
-credentials. The section name should be the same as the SITE without the 'https://'. For example:
+This local version expects two environment variables to be present:
+
+1. USERNAME - this is the email you use to log into your Looker instance.
+2. PASS - this is the password you use to log into your looker instance.
+
+I recommend setting up a .env file that contains these values - pipenv will then automatically load them when you
+execute a `pipenv run` or `pipenv shell` command. A sample .env file would look like this:
 
 ```
-[jcp-dev.lookersandbox.com]
-username=name@company.com
-password=abc123
+USERNAME=foo@company.com
+PASS=abcxyz
 ```
 
 When your `locustfile.py` and `looker.ini` files are in order, kick off the test by invoking `locust` from the command
