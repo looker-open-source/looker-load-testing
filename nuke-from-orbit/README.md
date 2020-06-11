@@ -19,14 +19,14 @@ the steps are:
 
 ## A note on scaling
 
-Running headless browsers is a CPU-bound process. For this reason, if you are trying to time dashboard load times with Selenium I strongly recommend using CPU-optimized 
-machine types for your nodes. The example below uses the default N1 machine types for demonstration purposes. A reading of the Kubernetes deployment config files reveals 
-that the worker pods request 1 core. A good rule of thumb is each worker can simulate 2 real browsers with 1 core, so if you wanted to simulate 20 browsers you will need 
-approximately 10 cores in your cluster. (probably slightly more to handle some overhead - e.g. The master pod itself requires comparitively few resources, but still 
+Running headless browsers is a CPU-bound process. For this reason, if you are trying to time dashboard load times with Selenium I strongly recommend using CPU-optimized
+machine types for your nodes. The example below uses the default N1 machine types for demonstration purposes. A reading of the Kubernetes deployment config files reveals
+that the worker pods request 1 core. A good rule of thumb is each worker can simulate 2 real browsers with 1 core, so if you wanted to simulate 20 browsers you will need
+approximately 10 cores in your cluster. (probably slightly more to handle some overhead - e.g. The master pod itself requires comparitively few resources, but still
 needs some) Attempting to run workers with less CPU will result in degraded dashboard loading performance, leading to incorrect test results, as well as risk of pod eviction.
 
 One more note: For these tests, one browser does not equal one user - each browser can make a new dashboard request
-every second or two, meaning one browser can simulate the traffic of several human users. 
+every second or two, meaning one browser can simulate the traffic of several human users.
 
 ## Before you begin
 
@@ -36,7 +36,7 @@ Define environment variables for the project id, region and zone you want to use
 
     $ PROJECT=$(gcloud config get-value project)
     $ REGION=us-central1
-    $ ZONE=${REGION}-b
+    $ ZONE=${REGION}-c
     $ CLUSTER=gke-load-test
     $ gcloud config set compute/region $REGION
     $ gcloud config set compute/zone $ZONE
@@ -61,9 +61,8 @@ Cloud Storage
                 --zone $ZONE \
                 --scopes "https://www.googleapis.com/auth/cloud-platform" \
                 --num-nodes "3" \
-                --enable-autoscaling --min-nodes "3" \
-                --max-nodes "10" \
-                --addons HorizontalPodAutoscaling,HttpLoadBalancing
+                --machine-type "c2-standard-8" \
+                --addons HttpLoadBalancing
 
         $ gcloud container clusters get-credentials $CLUSTER \
         --zone $ZONE \
@@ -71,13 +70,11 @@ Cloud Storage
 
 2. Clone tutorial repo in a local directory on your cloud shell environment
 
-        $ git clone <this-repository>
+        $ git clone https://github.com/JCPistell/looker-load-testing.git
 
 3. Build docker image and store it in your project's container registry
 
-        $ pushd gke-load-test
         $ gcloud builds submit --tag gcr.io/$PROJECT/locust-tasks:latest docker-image/.
-
 
 4. Replace [PROJECT_ID] in locust-master-controller.yaml and locust-worker-controller.yaml with the deployed endpoint and project-id respectively.
 
@@ -109,7 +106,7 @@ To begin, specify the total number of users to simulate and a rate at which each
 9. [Optional] Scaling clients
 Scaling up the number of simulated users will require an increase in the number of Locust worker pods. To increase the number of pods deployed by the deployment, Kubernetes offers the ability to resize deployments without redeploying them. For example, the following command scales the pool of Locust worker pods to 20:
 
-        $ kubectl scale deployment/locust-worker --replicas=20
+        $ kubectl scale deployment/lw-pod --replicas=20
 
 ## Cleaning up
 
