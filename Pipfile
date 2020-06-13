@@ -8,8 +8,8 @@ ipython = "*"
 
 [packages]
 selenium = "*"
-locust = "*"
 realbrowserlocusts = "*"
+locustio = "==0.14.6"
 
 [requires]
 python_version = "3.7"
