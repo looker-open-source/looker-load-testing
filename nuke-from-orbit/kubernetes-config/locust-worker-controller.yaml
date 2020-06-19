@@ -5,7 +5,7 @@ metadata:
   labels:
     name: lw-pod
 spec:
-  replicas: 5
+  replicas: 20
   selector:
     matchLabels:
       app: lw-pod
@@ -30,7 +30,9 @@ spec:
             - name: LOCUST_MASTER_HOST
               value: lm-pod
             - name: TARGET_HOST
-              value: foo
+              value: dashboard
+            - name: LOCUST_STEP
+              value: false
             - name: USERNAME
               valueFrom:
                 secretKeyRef:

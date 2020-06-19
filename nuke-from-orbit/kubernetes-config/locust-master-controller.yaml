@@ -28,7 +28,9 @@ spec:
             - name: LOCUST_MODE
               value: master
             - name: TARGET_HOST
-              value: foo
+              value: dashboard
+            - name: LOCUST_STEP
+              value: false
             - name: USERNAME
               valueFrom:
                 secretKeyRef:
