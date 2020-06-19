@@ -36,11 +36,11 @@ class LocustUserBehavior(TaskSet):
 
     def open_dashboard(self):
         script = """
-        document.addEventListener('dashboard.rendered', function() {
-            var dash_render = document.createElement("div");
+        window.awaitPerformanceObservation("rendered").then(function() {
+            var dash_render = document.createElement("dev");
             dash_render.id = "dash_listener";
             document.body.appendChild(dash_render);
-        }, false);"""
+        });"""
 
         try:
             self.client.get(f"{SITE}/embed/dashboards/{str(DASH_ID)}")
