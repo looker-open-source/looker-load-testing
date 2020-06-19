@@ -37,7 +37,7 @@ class LocustUserBehavior(TaskSet):
     def open_dashboard(self):
         script = """
         window.awaitPerformanceObservation("rendered").then(function() {
-            var dash_render = document.createElement("dev");
+            var dash_render = document.createElement("div");
             dash_render.id = "dash_listener";
             document.body.appendChild(dash_render);
         });"""
