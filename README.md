@@ -43,9 +43,10 @@ lifting, but we've had to modify it to work in a distributed containerized forma
 over time.
 
 Additionally, to accurately time how long a Looker dashboard takes to load is not very straightforward. The best method
-comes from listening for a Javascript event Looker emits once dashboards are loaded (`dashboard.rendered`) but Selenium
-by default can't wait for JS events. We've solved the problem by executing an eventlistener in JS that then appends an
+comes from listening for a Javascript event Looker emits once dashboards are loaded (`rendered`) but Selenium
+by default can't wait for JS events. We've solved the problem by executing a `awaitPerformanceObservation` in JS that then appends an
 empty div to the DOM.
 
-It all works but rarely the event fires before the JS script runs. In these cases the listener will time out. This will
-appear as an outlier in the final load test report.
+This works as expected but there is some additional time taken by Selenium and Locust to append the empty div and
+register the time. This means the reported dashbard render time may be a couple of milliseconds greater than the actual
+render time.
