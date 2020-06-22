@@ -11,6 +11,7 @@ flake8 = "*"
 selenium = "*"
 realbrowserlocusts = "*"
 locustio = "==0.14.6"
+prometheus-client = "*"
 
 [requires]
 python_version = "3.7"
