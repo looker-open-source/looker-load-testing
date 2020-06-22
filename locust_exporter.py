@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
-from prometheus_client import start_http_server, Metric, REGISTRY
+from prometheus_client import start_http_server
+from prometheus_client.core import GaugeMetricFamily, CounterMetricFamily, REGISTRY
 import json
 import requests
 import sys
@@ -13,7 +14,7 @@ class LocustCollector(object):
 
     def collect(self):
         # Fetch the JSON
-        url = 'http://' + self._ep + '/stats/requests'
+        url = f"http://{self._ep}/stats/requests"
         try:
             response = requests.get(url).content.decode('Utf-8')
         except requests.exceptions.ConnectionError:
@@ -33,46 +34,51 @@ class LocustCollector(object):
             'num_requests'
         ]
 
-        metric = Metric('locust_user_count', 'Swarmed users', 'gauge')
-        metric.add_sample('locust_user_count', value=response['user_count'], labels={})
-        yield metric
+        # locust users
+        gmetric = GaugeMetricFamily("locust_user_count", "Swarmed users")
+        gmetric.add_metric(["user_count"], value=response["user_count"])
+        yield gmetric
 
-        metric = Metric('locust_errors', 'Locust requests errors', 'gauge')
+        # locust errors
+        gmetric = GaugeMetricFamily("locust_errors", "Locust Request Errors")
 
-        for err in response['errors']:
-            metric.add_sample(
-                'locust_errors',
-                value=err['occurences'],
-                labels={'path': err['name'], 'method': err['method']}
+        for err in response["errors"]:
+            gmetric.add_metric(
+                [err["name"], err["method"]],
+                value=err["occurences"]
             )
-        yield metric
 
-        if 'slave_count' in response:
-            metric = Metric('locust_slave_count', 'Locust number of slaves', 'gauge')
-            metric.add_sample('locust_slave_count', value=response['slave_count'], labels={})
-            yield metric
+        yield gmetric
 
-        metric = Metric('locust_fail_ratio', 'Locust failure ratio', 'gauge')
-        metric.add_sample('locust_fail_ratio', value=response['fail_ratio'], labels={})
-        yield metric
+        # locust workers
 
-        metric = Metric('locust_state', 'State of the locust swarm', 'gauge')
-        metric.add_sample('locust_state', value=1, labels={'state': response['state']})
-        yield metric
+        if "slaves" in response:
+            gmetric = GaugeMetricFamily("locust_worker_count", "number of locust workers")
+            gmetric.add_metric(["worker_count"], value=len(response["slaves"]))
+            yield gmetric
+
+        # locust failure ratio
+        gmetric = GaugeMetricFamily("locust_failure_ratio", "Locust failure ratio")
+        gmetric.add_metric(["failure_ratio"], value=response["fail_ratio"])
+        yield gmetric
+
+        # locust state
+        gmetric = GaugeMetricFamily("locust_state", "State of the locust swarm")
+        gmetric.add_metric([{"state": response["state"]}], value=1)
+        yield gmetric
 
         for mtr in stats_metrics:
-            mtype = 'gauge'
             if mtr in ['num_requests', 'num_failures']:
-                mtype = 'counter'
-            metric = Metric('locust_requests_'+mtr, 'Locust requests '+mtr, mtype)
+                gmetric = CounterMetricFamily(f"locust_requests_{mtr}", f"Locust requests {mtr}")
+            else:
+                gmetric = GaugeMetricFamily(f"locust_requests_{mtr}", f"Locust requests {mtr}")
             for stat in response['stats']:
                 if 'Total' not in stat['name']:
-                    metric.add_sample(
-                        'locust_requests_' + mtr,
+                    gmetric.add_metric(
+                        [{"path": stat["name"], "method": stat["method"]}],
                         value=stat[mtr],
-                        labels={'path': stat['name'], 'method': stat['method']}
                     )
-            yield metric
+            yield gmetric
 
 
 if __name__ == '__main__':
