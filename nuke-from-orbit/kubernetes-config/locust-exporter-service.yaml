@@ -1,0 +1,15 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: le-pod
+  labels: 
+    app: le-pod
+spec:
+  ports:
+    - port: 9646
+      targetPort: lexp-web
+      protocol: TCP
+  selector:
+    app: le-pod
+  type: NodePort
+        

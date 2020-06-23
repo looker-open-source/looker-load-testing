@@ -98,7 +98,7 @@ Cloud Storage
 
 7. Get the external ip of Locust master service
 
-        $ EXTERNAL_IP=$(kubectl get svc locust-master -o yaml | grep ip | awk -F":" '{print $NF}')
+        $ EXTERNAL_IP=$(kubectl get svc lm-pod -o yaml | grep ip | awk -F":" '{print $NF}')
 
 8. Starting load testing
 The Locust master web interface enables you to execute the load testing tasks against the system under test, as shown in the following image. Access the url as http://$EXTERNAL_IP:8089.
@@ -118,6 +118,7 @@ Summary metrics are available for download, but the rich timeseries data is not,
 1. Deploy Locust Exporter - this polls the Locust server and displays the relevant information in a Prometheus-friendly format:
 
         $ kubectl apply -f kubernetes-config/locust-exporter-controller.yaml
+        $ kubectl apply -f kubernetes-config/locust-exporter-service.yaml
 
 2. Deploy the configmap for Prometheus - this contains the appropriate configuration to tell Prometheus where to get the Locust metrics:
         
@@ -126,6 +127,7 @@ Summary metrics are available for download, but the rich timeseries data is not,
 3. Deploy Prometheus:
         
         $ kubectl apply -f kubernetes-config/prometheus-deployment.yaml
+        $ kubectl apply -f kubernetes-config/prometheus-service.yaml
 
 4. Deploy the Grafana deployment and service:
         
