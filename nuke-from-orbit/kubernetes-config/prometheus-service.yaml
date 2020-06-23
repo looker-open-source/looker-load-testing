@@ -1,0 +1,14 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: prom-pod
+  labels: 
+    app: prom-pod
+spec:
+  ports:
+    - port: 9090
+      targetPort: loc-prom-web
+      protocol: TCP
+selector:
+  app: prom-pod
+type: NodePort

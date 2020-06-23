@@ -1,19 +1,19 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: prometheus-deployment
+  name: prom-pod
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: prometheus-server
+      app: prom-pod
   template:
     metadata:
       labels:
-        app: prometheus-server
+        app: prom-pod
     spec:
       containers:
-        - name: prometheus-server
+        - name: prom-pod
           image: prom/prometheus:v2.19.1
           args:
             - "--config.file=/etc/prometheus/prometheus.yml"
