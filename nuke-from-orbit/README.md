@@ -116,19 +116,24 @@ While we can now load test Looker at scale the data available from locust out of
 Summary metrics are available for download, but the rich timeseries data is not, and the charts reset on every refresh. We can probably do better, and fortunately Kubernetes has great support for monitoring. We will use Prometheus and Grafana to collect and display our load testing metrics.
 
 1. Deploy Locust Exporter - this polls the Locust server and displays the relevant information in a Prometheus-friendly format:
+
         $ kubectl apply -f kubernetes-config/locust-exporter-controller.yaml
 
 2. Deploy the configmap for Prometheus - this contains the appropriate configuration to tell Prometheus where to get the Locust metrics:
+        
         $ kubectl apply -f kubernetes-config/config-map.yaml
 
 3. Deploy Prometheus:
+        
         $ kubectl apply -f kubernetes-config/prometheus-deployment.yaml
 
 4. Deploy the Grafana deployment and service:
+        
         $ kubectl apply -f kubernetes-config/grafana-deployment.yaml
         $ kubectl apply -f kubernetes-config/grafana-service.yaml
 
 5. Get the external ip of the Grafana service (this make take a minute to be available):
+        
         $ kubectl get svc grafana -o yaml | grep ip | awk -F":" '{print $NF}'
 
 6. Navigate to the ip address on port 3000 (e.g. http://12.34.5.6:3000) and log in - the default username/password is `admin/admin`. You will be prompted to change it on your first login
