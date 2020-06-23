@@ -68,9 +68,10 @@ Cloud Storage
         --zone $ZONE \
         --project $PROJECT
 
-2. Clone tutorial repo in a local directory on your cloud shell environment
+2. Clone repo in a local directory on your cloud shell environment and cd to the `nuke-from-orbit` directory
 
         $ git clone https://github.com/JCPistell/looker-load-testing.git
+        $ cd looker-load-testing/nuke-from-orbit
 
 3. Build docker image and store it in your project's container registry
 
@@ -85,8 +86,9 @@ Cloud Storage
 5. Create a kubernetes secret called `website-creds` that contains two entries - `username` and `password` - that tie to
    the looker instance you are logging into:
 
-        $ kubectl create secret generic website-creds --from-literal=username='<your username>'
-        --from-literal=password='<your password>'
+        $ echo -n <your username> > username.txt
+        $ echo -n <your password> > pass.txt
+        $ kubectl create secret generic website-creds --from-file=username=./username.txt --from-file=password=./pass.txt
 
 6. Deploy Locust master and worker nodes:
 
@@ -107,6 +109,33 @@ To begin, specify the total number of users to simulate and a rate at which each
 Scaling up the number of simulated users will require an increase in the number of Locust worker pods. To increase the number of pods deployed by the deployment, Kubernetes offers the ability to resize deployments without redeploying them. For example, the following command scales the pool of Locust worker pods to 20:
 
         $ kubectl scale deployment/lw-pod --replicas=20
+
+## [Optional] Better Monitoring and Data Retention
+
+While we can now load test Looker at scale the data available from locust out of the box leaves something to be desired.
+Summary metrics are available for download, but the rich timeseries data is not, and the charts reset on every refresh. We can probably do better, and fortunately Kubernetes has great support for monitoring. We will use Prometheus and Grafana to collect and display our load testing metrics.
+
+1. Deploy Locust Exporter - this polls the Locust server and displays the relevant information in a Prometheus-friendly format:
+        $ kubectl apply -f kubernetes-config/locust-exporter-controller.yaml
+
+2. Deploy the configmap for Prometheus - this contains the appropriate configuration to tell Prometheus where to get the Locust metrics:
+        $ kubectl apply -f kubernetes-config/config-map.yaml
+
+3. Deploy Prometheus:
+        $ kubectl apply -f kubernetes-config/prometheus-deployment.yaml
+
+4. Deploy the Grafana deployment and service:
+        $ kubectl apply -f kubernetes-config/grafana-deployment.yaml
+        $ kubectl apply -f kubernetes-config/grafana-service.yaml
+
+5. Get the external ip of the Grafana service (this make take a minute to be available):
+        $ kubectl get svc grafana -o yaml | grep ip | awk -F":" '{print $NF}'
+
+6. Navigate to the ip address on port 3000 (e.g. http://12.34.5.6:3000) and log in - the default username/password is `admin/admin`. You will be prompted to change it on your first login
+
+7. Set up Prometheus as a data source - you will need to enter a host URL of `http://prometheus-deployment:9090`. Leave everything else on defaults and click 'Save & Test'
+8. The fine folks at Container Solutions have created a pre-configured grafana dashboard for use with Locust. Navigate to Dashboard Import and enter [11985](https://grafana.com/grafana/dashboards/11985).
+9. Kick off your load test from the Locust interface and enjoy your improved metrics dashboard!
 
 ## Cleaning up
 
