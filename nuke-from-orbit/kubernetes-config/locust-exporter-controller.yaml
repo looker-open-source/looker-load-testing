@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: "Deployment"
+metadata:
+  name: le-pod
+  labels:
+    name: le-pod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: le-pod
+  template:
+    metadata:
+      labels:
+        app: le-pod
+    spec:
+      containers:
+        - name: le-pod
+          image: containersol/locust_exporter:v0.3.0
+          env:
+            - name: LOCUST_EXPORTER_URI
+              value: http://lm-pod:8089 
+          ports:
+            - name: loc-exporter-web
+              containerPort: 9646
+              protocol: TCP
+
