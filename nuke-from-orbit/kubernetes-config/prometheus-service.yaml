@@ -9,6 +9,6 @@ spec:
     - port: 9090
       targetPort: loc-prom-web
       protocol: TCP
-selector:
-  app: prom-pod
-type: NodePort
+  selector:
+    app: prom-pod
+  type: NodePort

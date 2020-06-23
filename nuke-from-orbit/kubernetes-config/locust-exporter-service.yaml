@@ -9,7 +9,7 @@ spec:
     - port: 9646
       targetPort: lexp-web
       protocol: TCP
-selector:
-  app: le-pod
-type: NodePort
+  selector:
+    app: le-pod
+  type: NodePort
         
