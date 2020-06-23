@@ -1,3 +1,5 @@
 looker.ini
 docker-compose.yml
 .env
+username.txt
+pass.txt

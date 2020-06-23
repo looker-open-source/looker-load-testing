@@ -21,7 +21,7 @@ spec:
             - name: LOCUST_EXPORTER_URI
               value: http://lm-pod:8089 
           ports:
-            - name: loc-exporter-web
+            - name: lexp-web
               containerPort: 9646
               protocol: TCP
 
