@@ -13,4 +13,4 @@ data:
       - job_name: 'locust'
         scrape_interval: 2s
         static_configs:
-          - targets: ['monitor:9646']
+          - targets: ['le-pod:9646']
