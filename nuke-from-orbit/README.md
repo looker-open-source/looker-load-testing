@@ -96,7 +96,7 @@ Define environment variables for the project id, region and zone you want to use
    `locust-controller.yaml` - note that you must do this in both the `lm-pod` and `lw-pod` Deployments.
 
 6. Create a Kubernetes secret called `website-creds` that contains two entries - `username` and `password` - that tie to
-   the looker instance you are logging into:
+   the Looker instance you will be logging into (the instance you specified in step 3):
 
         $ echo -n <your username> > username.txt
         $ echo -n <your password> > pass.txt
