@@ -18,4 +18,4 @@ data:
         updateIntervalSeconds: 30
         allowUiUpdates: false
         options:
-          path: /var/lib/grafana/dashboardse
+          path: /var/lib/grafana/dashboards
