@@ -127,8 +127,8 @@ Summary metrics are available for download, but the rich timeseries data is not,
 
 6. Navigate to the ip address on port 3000 (e.g. http://12.34.5.6:3000) and log in - the default username/password is `admin/admin`. You will be prompted to change it on your first login
 
-7. A dashboard should be preconfigured to connect to your Locust metrics. Kick off a load test from the Locust interface
-   and enjoy your improved metrics dashboard!
+7. A dashboard should be preconfigured to connect to your Locust metrics. You can find it by navigating to Dashboards ->
+   Manage. Kick off a load test from the Locust interfac and enjoy your improved metrics dashboard!
 
 ## Cleaning up
 
