@@ -76,7 +76,12 @@ Define environment variables for the project id, region and zone you want to use
         $ git clone https://github.com/JCPistell/looker-load-testing.git
         $ cd looker-load-testing/nuke-from-orbit
 
-3. Modify the contents of `docker-image/locust-tasks/tasks.py` to suit your testing criteria.
+3. **Very Important!** Modify the contents of `docker-image/locust-tasks/tasks.py` to suit your testing criteria
+
+> The example `tasks.py` outlines a standard dashboard rendering performance test. Near the top of the file you will
+> want to modify the `SITE` and `DASH_ID` variables to match the Looker instance you are testing and the relevant
+> dashboard id. Different testing goals will require specific test code - Locust is flexible enough to handle just about
+> any kind of test you can think of!
 
 4. Build docker image and store it in your project's container registry. Note this command assumes you are in the
    `nuke-from-orbit` directory.
@@ -93,7 +98,7 @@ Define environment variables for the project id, region and zone you want to use
 6. Create a Kubernetes secret called `website-creds` that contains two entries - `username` and `password` - that tie to
    the looker instance you are logging into:
 
-        $ echo -n <your username> > username.txt 
+        $ echo -n <your username> > username.txt
         $ echo -n <your password> > pass.txt
         $ kubectl create secret generic website-creds --from-file=username=./username.txt --from-file=password=./pass.txt
 
@@ -101,16 +106,20 @@ Define environment variables for the project id, region and zone you want to use
 
         $ kubectl apply -f kubernetes-config/locust-controller.yaml
 
-8. Get the external IP of Locust master service
+8. Get the external IP of Locust master service. Note this may take a minute or two to populate so we will use a `watch`
+   command to know when it's ready:
 
-        $ EXTERNAL_IP=$(kubectl get svc lm-pod -o yaml | grep ip | awk -F":" '{print $NF}')
+        $ watch kubectl get svc
 
-9. Starting load testing The Locust master web interface enables you to execute the load testing tasks against the
-   system under test, as shown in the following image. Access the URL as http://$EXTERNAL_IP:8089.
+    When the IP address is ready, copy it for the next step.
+
+9. Starting load testing. The Locust master web interface enables you to execute the load testing tasks against the
+   system under test. Access the URL as http://[YOUR LOCUST IP]:8089.
 
 To begin, specify the total number of users to simulate and a rate at which each user should be spawned. Next, click
 Start swarming to begin the simulation. To stop the simulation, click **Stop** and the test will terminate. The complete
-results can be downloaded into a spreadsheet.
+results can be downloaded into a spreadsheet. Note that the Host parameter (by default set to 'dashboard' in the example
+test) is not used when we're working with real browsers - it's used for standard API-based load tests.
 
 10. [Optional] Scaling clients Scaling up the number of simulated users will require an increase in the number of Locust
    worker pods. To increase the number of pods deployed by the deployment, Kubernetes offers the ability to resize
@@ -137,9 +146,9 @@ Grafana to collect and display our load testing metrics.
 
 5. Get the external IP of the Grafana service (this make take a minute to be available):
 
-        $ GRAFANA_IP=$(kubectl get svc grafana -o yaml | grep ip | awk -F":" '{print $NF}')
+        $ watch kubectl get svc
 
-6. Navigate to the IP address on port 3000 (e.g. http://$GRAFANA_IP:3000) and log in - the default username/password is
+6. Navigate to the IP address on port 3000 (e.g. http://[YOUR GRAFANA IP]:3000) and log in - the default username/password is
    `admin/admin`. You will be prompted to change it on your first login
 
 7. A dashboard should be preconfigured to connect to your Locust metrics. You can find it by navigating to Dashboards ->
