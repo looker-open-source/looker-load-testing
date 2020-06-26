@@ -1,0 +1,61 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: grafana
+  labels:
+    app: grafana
+spec:
+  ports:
+    - port: 3000
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: grafana
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: "Deployment"
+metadata:
+  labels:
+    app: grafana
+  name: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - image: grafana/grafana:7.0.3
+          name: grafana
+          ports:
+            - containerPort: 3000
+              name: http
+          volumeMounts:
+            - name: grafana-datasource-provision
+              mountPath: /etc/grafana/provisioning/datasources
+            - name: grafana-dashboard-provision
+              mountPath: /etc/grafana/provisioning/dashboards
+            - name: grafana-dashboard-json
+              mountPath: /var/lib/grafana/dashboards
+      volumes:
+        - name: grafana-datasource-provision
+          configMap:
+            defaultMode: 420
+            name: grafana-datasource-conf
+
+        - name: grafana-dashboard-provision
+          configMap:
+            defaultMode: 420
+            name: grafana-dashboard-prov-conf
+
+        - name: grafana-dashboard-json
+          configMap:
+            defaultMode: 420
+            name: grafana-dashboard-json-conf
+
