@@ -40,15 +40,15 @@ Open Cloud Shell to execute the commands listed in this tutorial.
 
 Define environment variables for the project id, region and zone you want to use for this tutorial.
 
-    $ PROJECT=$(gcloud config get-value project) 
-    $ REGION=us-central1 
-    $ ZONE=${REGION}-c 
-    $ CLUSTER=gke-load-test 
+    $ PROJECT=$(gcloud config get-value project)
+    $ REGION=us-central1
+    $ ZONE=${REGION}-c
+    $ CLUSTER=gke-load-test
     $ gcloud config set compute/region $REGION $ gcloud config set compute/zone $ZONE
 
 **Note:** Following services should be enabled in your project: Cloud Build Kubernetes Engine Cloud Storage
 
-    $ gcloud services enable \ 
+    $ gcloud services enable \
       cloudbuild.googleapis.com \
       compute.googleapis.com \
       container.googleapis.com \
@@ -77,7 +77,8 @@ Define environment variables for the project id, region and zone you want to use
 
 3. Modify the contents of `docker-image/locust-tasks/tasks.py` to suit your testing criteria.
 
-4. Build docker image and store it in your project's container registry
+4. Build docker image and store it in your project's container registry. Note this command assumes you are in the
+   `nuke-from-orbit` directory.
 
         $ gcloud builds submit --tag gcr.io/$PROJECT/locust-tasks:latest docker-image/.
 
@@ -85,13 +86,13 @@ Define environment variables for the project id, region and zone you want to use
 
         $ sed -i -e "s/\[PROJECT_ID\]/$PROJECT/g" kubernetes-config/locust-controller.yaml
 
-   If you want to enable step-mode you can change the `LOCUST_STEP` variables from `"false"` to `"true" in
+   If you want to enable step-mode you can change the `LOCUST_STEP` variables from `"false"` to `"true"` in
    `locust-controller.yaml` - note that you must do this in both the `lm-pod` and `lw-pod` Deployments.
 
 6. Create a kubernetes secret called `website-creds` that contains two entries - `username` and `password` - that tie to
    the looker instance you are logging into:
 
-        $ echo -n <your username> > username.txt $ echo -n <your password> > pass.txt 
+        $ echo -n <your username> > username.txt $ echo -n <your password> > pass.txt
         $ kubectl create secret generic website-creds --from-file=username=./username.txt --from-file=password=./pass.txt
 
 7. Deploy Locust master and worker nodes:
@@ -124,12 +125,12 @@ Grafana to collect and display our load testing metrics.
 
 1. Deploy Prometheus
 
-        $ kubectl apply -f kubernetes-config/prometheus-config.yaml 
+        $ kubectl apply -f kubernetes-config/prometheus-config.yaml
         $ kubectl apply -f kubernetes-config/prometheus-controller.yaml
 
 4. Deploy Grafana
 
-        $ kubectl apply -f kubernetes-config/grafana-config.yaml 
+        $ kubectl apply -f kubernetes-config/grafana-config.yaml
         $ kubectl apply -f kubernetes-config/grafana-controller.yaml
 
 5. Get the external ip of the Grafana service (this make take a minute to be available):
