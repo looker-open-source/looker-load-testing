@@ -1,3 +1,18 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: prom-pod
+  labels: 
+    app: prom-pod
+spec:
+  ports:
+    - port: 9090
+      targetPort: loc-prom-web
+      protocol: TCP
+  selector:
+    app: prom-pod
+  type: NodePort
+---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -35,3 +50,4 @@ spec:
   
         - name: prometheus-storage-volume
           emptyDir: {}
+

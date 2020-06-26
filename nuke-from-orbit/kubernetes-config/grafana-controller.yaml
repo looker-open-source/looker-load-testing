@@ -1,3 +1,19 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: grafana
+  labels:
+    app: grafana
+spec:
+  ports:
+    - port: 3000
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: grafana
+  type: LoadBalancer
+---
 apiVersion: apps/v1
 kind: "Deployment"
 metadata:
@@ -42,3 +58,4 @@ spec:
           configMap:
             defaultMode: 420
             name: grafana-dashboard-json-conf
+

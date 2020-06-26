@@ -77,11 +77,9 @@ Cloud Storage
 
         $ gcloud builds submit --tag gcr.io/$PROJECT/locust-tasks:latest docker-image/.
 
-4. Replace [PROJECT_ID] in locust-master-controller.yaml and locust-worker-controller.yaml with the deployed endpoint and project-id respectively.
+4. Replace [PROJECT_ID] in locust-controller.yaml with the deployed endpoint and project-id respectively.
 
-        $ sed -i -e "s/\[PROJECT_ID\]/$PROJECT/g" kubernetes-config/locust-master-controller.yaml
-        $ sed -i -e "s/\[PROJECT_ID\]/$PROJECT/g" kubernetes-config/locust-worker-controller.yaml
-
+        $ sed -i -e "s/\[PROJECT_ID\]/$PROJECT/g" kubernetes-config/locust-controller.yaml
 
 5. Create a kubernetes secret called `website-creds` that contains two entries - `username` and `password` - that tie to
    the looker instance you are logging into:
@@ -92,9 +90,7 @@ Cloud Storage
 
 6. Deploy Locust master and worker nodes:
 
-        $ kubectl apply -f kubernetes-config/locust-master-controller.yaml
-        $ kubectl apply -f kubernetes-config/locust-master-service.yaml
-        $ kubectl apply -f kubernetes-config/locust-worker-controller.yaml
+        $ kubectl apply -f kubernetes-config/locust-controller.yaml
 
 7. Get the external ip of Locust master service
 
@@ -115,24 +111,15 @@ Scaling up the number of simulated users will require an increase in the number 
 While we can now load test Looker at scale the data available from locust out of the box leaves something to be desired.
 Summary metrics are available for download, but the rich timeseries data is not, and the charts reset on every refresh. We can probably do better, and fortunately Kubernetes has great support for monitoring. We will use Prometheus and Grafana to collect and display our load testing metrics.
 
-1. Deploy Locust Exporter - this polls the Locust server and displays the relevant information in a Prometheus-friendly format:
-
-        $ kubectl apply -f kubernetes-config/locust-exporter-controller.yaml
-        $ kubectl apply -f kubernetes-config/locust-exporter-service.yaml
-
-2. Deploy the configmap for Prometheus - this contains the appropriate configuration to tell Prometheus where to get the Locust metrics:
+1. Deploy Prometheus
         
-        $ kubectl apply -f kubernetes-config/config-map.yaml
+        $ kubectl apply -f kubernetes-config/prometheus-config.yaml
+        $ kubectl apply -f kubernetes-config/prometheus-controller.yaml
 
-3. Deploy Prometheus:
+4. Deploy Grafana
         
-        $ kubectl apply -f kubernetes-config/prometheus-deployment.yaml
-        $ kubectl apply -f kubernetes-config/prometheus-service.yaml
-
-4. Deploy the Grafana deployment and service:
-        
-        $ kubectl apply -f kubernetes-config/grafana-deployment.yaml
-        $ kubectl apply -f kubernetes-config/grafana-service.yaml
+        $ kubectl apply -f kubernetes-config/grafana-config.yaml
+        $ kubectl apply -f kubernetes-config/grafana-controller.yaml
 
 5. Get the external ip of the Grafana service (this make take a minute to be available):
         
@@ -140,9 +127,8 @@ Summary metrics are available for download, but the rich timeseries data is not,
 
 6. Navigate to the ip address on port 3000 (e.g. http://12.34.5.6:3000) and log in - the default username/password is `admin/admin`. You will be prompted to change it on your first login
 
-7. Set up Prometheus as a data source - you will need to enter a host URL of `http://prometheus-deployment:9090`. Leave everything else on defaults and click 'Save & Test'
-8. The fine folks at Container Solutions have created a pre-configured grafana dashboard for use with Locust. Navigate to Dashboard Import and enter [11985](https://grafana.com/grafana/dashboards/11985).
-9. Kick off your load test from the Locust interface and enjoy your improved metrics dashboard!
+7. A dashboard should be preconfigured to connect to your Locust metrics. You can find it by navigating to Dashboards ->
+   Manage. Kick off a load test from the Locust interfac and enjoy your improved metrics dashboard!
 
 ## Cleaning up
 
