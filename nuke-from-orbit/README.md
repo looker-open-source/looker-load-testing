@@ -44,7 +44,8 @@ Define environment variables for the project id, region and zone you want to use
     $ REGION=us-central1
     $ ZONE=${REGION}-c
     $ CLUSTER=gke-load-test
-    $ gcloud config set compute/region $REGION $ gcloud config set compute/zone $ZONE
+    $ gcloud config set compute/region $REGION
+    $ gcloud config set compute/zone $ZONE
 
 **Note:** Following services should be enabled in your project: Cloud Build, Kubernetes Engine, Cloud Storage
 
