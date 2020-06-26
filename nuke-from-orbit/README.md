@@ -135,9 +135,9 @@ Grafana to collect and display our load testing metrics.
 
 5. Get the external ip of the Grafana service (this make take a minute to be available):
 
-        $ kubectl get svc grafana -o yaml | grep ip | awk -F":" '{print $NF}'
+        $ GRAFANA_IP=$(kubectl get svc grafana -o yaml | grep ip | awk -F":" '{print $NF}')
 
-6. Navigate to the ip address on port 3000 (e.g. http://12.34.5.6:3000) and log in - the default username/password is
+6. Navigate to the ip address on port 3000 (e.g. http://$GRAFANA_IP:3000) and log in - the default username/password is
    `admin/admin`. You will be prompted to change it on your first login
 
 7. A dashboard should be preconfigured to connect to your Locust metrics. You can find it by navigating to Dashboards ->
