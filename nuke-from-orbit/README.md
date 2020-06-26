@@ -40,23 +40,35 @@ Open Cloud Shell to execute the commands listed in this tutorial.
 
 Define environment variables for the project id, region and zone you want to use for this tutorial.
 
-    $ PROJECT=$(gcloud config get-value project) $ REGION=us-central1 $ ZONE=${REGION}-c $ CLUSTER=gke-load-test $
-    gcloud config set compute/region $REGION $ gcloud config set compute/zone $ZONE
+    $ PROJECT=$(gcloud config get-value project) 
+    $ REGION=us-central1 
+    $ ZONE=${REGION}-c 
+    $ CLUSTER=gke-load-test 
+    $ gcloud config set compute/region $REGION $ gcloud config set compute/zone $ZONE
 
 **Note:** Following services should be enabled in your project: Cloud Build Kubernetes Engine Cloud Storage
 
-    $ gcloud services enable \ cloudbuild.googleapis.com \ compute.googleapis.com \ container.googleapis.com \
-    containeranalysis.googleapis.com \ containerregistry.googleapis.com
+    $ gcloud services enable \ 
+      cloudbuild.googleapis.com \
+      compute.googleapis.com \
+      container.googleapis.com \
+      containeranalysis.googleapis.com \
+      containerregistry.googleapis.com
 
 ## Setup
 
 1. Create GKE cluster
 
-        $ gcloud container clusters create $CLUSTER \ --zone $ZONE \ --scopes
-        "https://www.googleapis.com/auth/cloud-platform" \ --num-nodes "3" \ --machine-type "c2-standard-8" \ --addons
-        HttpLoadBalancing
+        $ gcloud container clusters create $CLUSTER \
+          --zone $ZONE \
+          --scopes "https://www.googleapis.com/auth/cloud-platform" \
+          --num-nodes "3" \
+          --machine-type "c2-standard-8" \
+          --addons HttpLoadBalancing
 
-        $ gcloud container clusters get-credentials $CLUSTER \ --zone $ZONE \ --project $PROJECT
+        $ gcloud container clusters get-credentials $CLUSTER \
+          --zone $ZONE \
+          --project $PROJECT
 
 2. Clone repo in a local directory on your cloud shell environment and cd to the `nuke-from-orbit` directory
 
