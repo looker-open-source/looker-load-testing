@@ -92,7 +92,8 @@ Define environment variables for the project id, region and zone you want to use
 6. Create a Kubernetes secret called `website-creds` that contains two entries - `username` and `password` - that tie to
    the looker instance you are logging into:
 
-        $ echo -n <your username> > username.txt $ echo -n <your password> > pass.txt
+        $ echo -n <your username> > username.txt 
+        $ echo -n <your password> > pass.txt
         $ kubectl create secret generic website-creds --from-file=username=./username.txt --from-file=password=./pass.txt
 
 7. Deploy Locust master and worker nodes:
