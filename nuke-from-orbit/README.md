@@ -91,7 +91,7 @@ Define environment variables for the project id, region and zone you want to use
    `locust-controller.yaml` - note that you must do this in both the `lm-pod` and `lw-pod` Deployments.
 
 6. Create a Kubernetes secret called `website-creds` that contains two entries - `username` and `password` - that tie to
-   the looker instance you are logging into:
+   the Looker instance you will be logging into from LocustIO (you do not need to specify the host as a k8s secret):
 
         $ echo -n <your username> > username.txt 
         $ echo -n <your password> > pass.txt
@@ -101,7 +101,7 @@ Define environment variables for the project id, region and zone you want to use
 
         $ kubectl apply -f kubernetes-config/locust-controller.yaml
 
-8. Get the external IP of Locust master service
+8. Get the external IP of Locust master service - you may need to wait a few minutes before the external IP is available. If at first you don't succeed, try again:
 
         $ EXTERNAL_IP=$(kubectl get svc lm-pod -o yaml | grep ip | awk -F":" '{print $NF}')
 
