@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-prov-conf
+  labels:
+    name: grafana-dashboard-prov-conf
+data:
+  dashboards.yml: |-
+    apiVersion: 1
+    providers:
+      - name: 'locust_dashes'
+        orgId: 1
+        folder: ''
+        folderUid: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        updateIntervalSeconds: 30
+        allowUiUpdates: false
+        options:
+          path: /var/lib/grafana/dashboards
