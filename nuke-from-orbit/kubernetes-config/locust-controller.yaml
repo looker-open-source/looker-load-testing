@@ -54,7 +54,7 @@ spec:
             - name: TARGET_HOST
               value: dashboard
             - name: LOCUST_STEP
-              value: false
+              value: "false"
             - name: USERNAME
               valueFrom:
                 secretKeyRef:
@@ -110,7 +110,7 @@ spec:
             - name: TARGET_HOST
               value: dashboard
             - name: LOCUST_STEP
-              value: false
+              value: "false"
             - name: USERNAME
               valueFrom:
                 secretKeyRef:
@@ -126,7 +126,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: le-pod
-  labels: 
+  labels:
     app: le-pod
 spec:
   ports:
@@ -136,7 +136,7 @@ spec:
   selector:
     app: le-pod
   type: NodePort
----        
+---
 apiVersion: apps/v1
 kind: "Deployment"
 metadata:
@@ -158,9 +158,8 @@ spec:
           image: containersol/locust_exporter:v0.3.0
           env:
             - name: LOCUST_EXPORTER_URI
-              value: http://lm-pod:8089 
+              value: http://lm-pod:8089
           ports:
             - name: lexp-web
               containerPort: 9646
               protocol: TCP
-
