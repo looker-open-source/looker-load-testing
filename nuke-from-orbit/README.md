@@ -4,7 +4,7 @@
 
 Sometimes you need a little more boom, so let's rain fire from the clouds... it's the only way to be sure.
 
-This section contains a framework for a kubernetes-based distributed locustio cluster. Provided is an example of how to
+This section contains a framework for a Kubernetes-based distributed LocustIO cluster. Provided is an example of how to
 run a "real browser" based test of a looker dashboard.
 
 This guide is derived from the official GCP locust/kubernetes tutorial, which can be found
@@ -25,7 +25,7 @@ Selenium I strongly recommend using CPU-optimized machine types for your nodes. 
 C2 machine types for demonstration purposes. A reading of the Kubernetes deployment config files reveals that the worker
 pods request 1 core. A good rule of thumb is each worker can simulate 2 real browsers with 1 core, so if you wanted to
 simulate 20 browsers you will need approximately >10 cores in your cluster. (slightly more to handle some overhead -
-e.g. The master pod itself as well as prometheus and grafana if you want the dashboards) Attempting to run workers with
+e.g. The master pod itself as well as Prometheus and Grafana if you want the dashboards) Attempting to run workers with
 less CPU will result in degraded dashboard loading performance, leading to incorrect test results, as well as risk of
 pod eviction.
 
@@ -89,7 +89,7 @@ Define environment variables for the project id, region and zone you want to use
    If you want to enable step-mode you can change the `LOCUST_STEP` variables from `"false"` to `"true"` in
    `locust-controller.yaml` - note that you must do this in both the `lm-pod` and `lw-pod` Deployments.
 
-6. Create a kubernetes secret called `website-creds` that contains two entries - `username` and `password` - that tie to
+6. Create a Kubernetes secret called `website-creds` that contains two entries - `username` and `password` - that tie to
    the looker instance you are logging into:
 
         $ echo -n <your username> > username.txt $ echo -n <your password> > pass.txt
@@ -99,12 +99,12 @@ Define environment variables for the project id, region and zone you want to use
 
         $ kubectl apply -f kubernetes-config/locust-controller.yaml
 
-8. Get the external ip of Locust master service
+8. Get the external IP of Locust master service
 
         $ EXTERNAL_IP=$(kubectl get svc lm-pod -o yaml | grep ip | awk -F":" '{print $NF}')
 
 9. Starting load testing The Locust master web interface enables you to execute the load testing tasks against the
-   system under test, as shown in the following image. Access the url as http://$EXTERNAL_IP:8089.
+   system under test, as shown in the following image. Access the URL as http://$EXTERNAL_IP:8089.
 
 To begin, specify the total number of users to simulate and a rate at which each user should be spawned. Next, click
 Start swarming to begin the simulation. To stop the simulation, click **Stop** and the test will terminate. The complete
@@ -133,15 +133,15 @@ Grafana to collect and display our load testing metrics.
         $ kubectl apply -f kubernetes-config/grafana-config.yaml
         $ kubectl apply -f kubernetes-config/grafana-controller.yaml
 
-5. Get the external ip of the Grafana service (this make take a minute to be available):
+5. Get the external IP of the Grafana service (this make take a minute to be available):
 
         $ GRAFANA_IP=$(kubectl get svc grafana -o yaml | grep ip | awk -F":" '{print $NF}')
 
-6. Navigate to the ip address on port 3000 (e.g. http://$GRAFANA_IP:3000) and log in - the default username/password is
+6. Navigate to the IP address on port 3000 (e.g. http://$GRAFANA_IP:3000) and log in - the default username/password is
    `admin/admin`. You will be prompted to change it on your first login
 
 7. A dashboard should be preconfigured to connect to your Locust metrics. You can find it by navigating to Dashboards ->
-   Manage. Kick off a load test from the Locust interfac and enjoy your improved metrics dashboard!
+   Manage. Kick off a load test from the Locust interface and enjoy your improved metrics dashboard!
 
 ## Cleaning up
 

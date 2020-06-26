@@ -6,7 +6,7 @@ modifying `locust-tasks/tasks.py` and alter startup options by modifying `locust
 
 ## docker-compose Assets
 
-This directory also contains assets used to test the containerized load testing tool. These are suitable for use with docker-compose. An i
+This directory also contains assets used to test the containerized load testing tool. These are suitable for use with docker-compose. An
 example docker-compose.yaml is included below:
 
 ```
