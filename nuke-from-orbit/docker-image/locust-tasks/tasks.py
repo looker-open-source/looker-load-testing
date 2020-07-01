@@ -25,10 +25,12 @@ class LocustUserBehavior(TaskSet):
         pass_entry = os.getenv("PASS")
         username = self.client.find_element_by_id("login-email")
         pw = self.client.find_element_by_id("login-password")
+        box = self.client.find_element_by_class_name("checkbox")
         username.clear()
         username.send_keys(user_entry)
         pw.clear()
         pw.send_keys(pass_entry)
+        box.click()
         self.client.find_element_by_id("login-submit").click()
 
     def logout(self):
