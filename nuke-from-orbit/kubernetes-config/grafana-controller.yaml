@@ -7,12 +7,12 @@ metadata:
 spec:
   ports:
     - port: 3000
-      targetPort: http
+      targetPort: loc-grafana-web
       protocol: TCP
-      name: http
+      name: loc-grafana-web
   selector:
     app: grafana
-  type: LoadBalancer
+  type: NodePort
 ---
 apiVersion: apps/v1
 kind: "Deployment"
@@ -35,7 +35,8 @@ spec:
           name: grafana
           ports:
             - containerPort: 3000
-              name: http
+              name: loc-grafana-web
+              protocol: TCP
           volumeMounts:
             - name: grafana-datasource-provision
               mountPath: /etc/grafana/provisioning/datasources
@@ -58,4 +59,3 @@ spec:
           configMap:
             defaultMode: 420
             name: grafana-dashboard-json-conf
-

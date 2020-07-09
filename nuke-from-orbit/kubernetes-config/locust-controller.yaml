@@ -20,7 +20,7 @@ spec:
       name: loc-master-p2
   selector:
     app: lm-pod
-  type: LoadBalancer
+  type: NodePort
 ---
 apiVersion: apps/v1
 kind: "Deployment"

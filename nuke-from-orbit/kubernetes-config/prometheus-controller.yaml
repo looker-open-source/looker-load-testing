@@ -2,13 +2,14 @@ kind: Service
 apiVersion: v1
 metadata:
   name: prom-pod
-  labels: 
+  labels:
     app: prom-pod
 spec:
   ports:
     - port: 9090
       targetPort: loc-prom-web
       protocol: TCP
+      name: loc-prom-web
   selector:
     app: prom-pod
   type: NodePort
@@ -47,7 +48,6 @@ spec:
           configMap:
             defaultMode: 420
             name: prom-conf
-  
+
         - name: prometheus-storage-volume
           emptyDir: {}
-
