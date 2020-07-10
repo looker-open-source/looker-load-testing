@@ -44,6 +44,8 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
           volumeMounts:
+            - name: grafana-config
+              mountPath: /etc/grafana
             - name: grafana-datasource-provision
               mountPath: /etc/grafana/provisioning/datasources
             - name: grafana-dashboard-provision
@@ -51,6 +53,11 @@ spec:
             - name: grafana-dashboard-json
               mountPath: /var/lib/grafana/dashboards
       volumes:
+        - name: grafana-config-provision
+          configMap:
+            defaultMode: 420
+            name: grafana-config
+
         - name: grafana-datasource-provision
           configMap:
             defaultMode: 420
