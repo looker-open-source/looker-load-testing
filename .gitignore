@@ -3,3 +3,5 @@ docker-compose.yml
 .env
 username.txt
 pass.txt
+client-id.txt
+client-secret.txt
