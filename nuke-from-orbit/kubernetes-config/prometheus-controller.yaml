@@ -6,7 +6,7 @@ metadata:
     app: prom-pod
 spec:
   ports:
-    - port: 9090
+    - port: 80
       targetPort: loc-prom-web
       protocol: TCP
       name: loc-prom-web

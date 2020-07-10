@@ -6,7 +6,7 @@ metadata:
     app: grafana
 spec:
   ports:
-    - port: 3000
+    - port: 80
       targetPort: loc-grafana-web
       protocol: TCP
       name: loc-grafana-web

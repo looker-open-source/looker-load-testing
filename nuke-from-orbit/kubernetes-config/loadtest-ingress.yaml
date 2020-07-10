@@ -4,21 +4,27 @@ metadata:
   name: my-ingress
   annotations:
     kubernetes.io/ingress.global-static-ip-name: loadtest-address
-    networking.gke.io/managed-certificates: loadtest-cert 
+    networking.gke.io/managed-certificates: loadtest-cert
 spec:
   rules:
-  - http:
-      paths:
-      - path: /*
-        backend:
-          serviceName: lm-pod
-          servicePort: 8089
-      - path: /dashboard
-        backend:
-          serviceName: grafana
-          servicePort: 3000
-      - path: /prometheus
-        backend:
-          serviceName: prom-pod
-          servicePort: 9090
-
+    - host: locust.loadtest.[DOMAIN]
+      http:
+        paths:
+          - path: /*
+            backend:
+              serviceName: lm-pod
+              servicePort: 80
+    - host: prometheus.loadtest.[DOMAIN]
+      http:
+        paths:
+          - path: /*
+            backend:
+              serviceName: prom-pod
+              servicePort: 80
+    - host: grafana.loadtest.[DOMAIN]
+      http:
+        paths:
+          - path: /*
+            backend:
+              serviceName: grafana
+              servicePort: 80

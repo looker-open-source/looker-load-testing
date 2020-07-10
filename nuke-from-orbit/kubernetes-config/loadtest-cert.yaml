@@ -4,4 +4,6 @@ metadata:
   name: loadtest-cert
 spec:
   domains:
-    - [DOMAIN]
+    - locust.loadtest.[DOMAIN]
+    - prometheus.loadtest.[DOMAIN]
+    - grafana.loadtest.[DOMAIN]
