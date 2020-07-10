@@ -39,7 +39,7 @@ spec:
               protocol: TCP
           readinessProbe:
             httpGet:
-              path: /login
+              path: /
               port: loc-grafana-web
             initialDelaySeconds: 5
             periodSeconds: 5
