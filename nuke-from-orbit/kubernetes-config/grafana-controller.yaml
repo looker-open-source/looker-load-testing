@@ -44,7 +44,7 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
           volumeMounts:
-            - name: grafana-config
+            - name: grafana-config-provision
               mountPath: /etc/grafana
             - name: grafana-datasource-provision
               mountPath: /etc/grafana/provisioning/datasources
