@@ -1,6 +1,8 @@
 kind: Service
 apiVersion: v1
 metadata:
+  annotations:
+    beta.cloud.google.com/backend-config: '{"default": "config-default"}'
   name: grafana
   labels:
     app: grafana
