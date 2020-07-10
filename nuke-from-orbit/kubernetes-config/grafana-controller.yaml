@@ -37,6 +37,12 @@ spec:
             - containerPort: 3000
               name: loc-grafana-web
               protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /login
+              port: loc-grafana-web
+            initialDelaySeconds: 5
+            periodSeconds: 5
           volumeMounts:
             - name: grafana-datasource-provision
               mountPath: /etc/grafana/provisioning/datasources

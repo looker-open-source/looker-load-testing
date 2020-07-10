@@ -14,7 +14,7 @@ spec:
     app: prom-pod
   type: NodePort
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: prom-pod
@@ -38,6 +38,12 @@ spec:
             - name: loc-prom-web
               containerPort: 9090
               protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /graph
+              port: loc-prom-web
+            initialDelaySeconds: 5
+            periodSeconds: 5
           volumeMounts:
             - name: prometheus-config-volume
               mountPath: /etc/prometheus/
