@@ -7,7 +7,7 @@ Sometimes you need a little more boom, so let's rain fire from the clouds... it'
 This section contains a framework for a Kubernetes-based distributed LocustIO cluster. Provided is an example of how to
 run a "real browser" based test of a looker dashboard.
 
-This guide is derived from the official GCP locust/kubernetes tutorial, which can be found
+This guide is derived from the official GCP Locust/Kubernetes tutorial, which can be found
 [here.](https://cloud.google.com/solutions/distributed-load-testing-using-gke)
 
 The instructions below are for GCP, but this can be run on any Kubernetes cluster in any environment. At a high level
@@ -124,7 +124,7 @@ In order to use Identity Aware Proxy (IAP) you will need to set up OAuth:
    `locust-controller.yaml` - note that you must do this in both the `lm-pod` and `lw-pod` Deployments.
 
 6. Replace [DOMAIN] in loadtest-cert.yaml and loadtest-ingress.yaml with your domain
-   name:
+   name: (be sure to replace the placeholder with your actual domain name!)
 
         $ sed -i -e "s/\[DOMAIN\]/<your domain name>/g" kubernetes-config/loadtest-cert.yaml
         $ sed -i -e "s/\[DOMAIN\]/<your domain name>/g" kubernetes-config/loadtest-ingress.yaml
@@ -148,7 +148,7 @@ In order to use Identity Aware Proxy (IAP) you will need to set up OAuth:
 ## Better Monitoring and Data Retention
 
 While we can now load test Looker at scale the data available from locust out of the box leaves something to be desired.
-Summary metrics are available for download, but the rich timeseries data is not, and the charts reset on every refresh.
+Summary metrics are available for download, but the rich time series data is not, and the charts reset on every refresh.
 We can probably do better, and fortunately Kubernetes has great support for monitoring. We will use Prometheus and
 Grafana to collect and display our load testing metrics.
 
@@ -165,7 +165,7 @@ Grafana to collect and display our load testing metrics.
 ## Configure Ingress
 
 Now that we have our services configured we need to access them. This ingress config will set up a layer-7 load balancer
-based on subdomain. We will also set up Identity Aware Proxy (IAP) to further secure our application.
+based on sub-domain. We will also set up Identity Aware Proxy (IAP) to further secure our application.
 
 1. Deploy the ingress config:
 
@@ -174,7 +174,8 @@ based on subdomain. We will also set up Identity Aware Proxy (IAP) to further se
 2. Follow the instructions for [Setting up IAP
    Access](https://cloud.google.com/iap/docs/enabling-kubernetes-howto#iap-access)
 
-3. Create a kubernetes secret for your OAuth client-id and client-secret:
+3. Create a Kubernetes secret called `iap-secret` for your OAuth client-id and client-secret: (be sure to replace the
+   placeholders with your actual values!)
 
         $ kubectl create secret generic iap-secret --from-literal=client_id=<your_client_id> --from-literal=client_secret=<your client_secret>
 
@@ -218,13 +219,26 @@ deployments without redeploying them. For example, the following command scales 
 
 
 ### Grafana
-Grafana can be accesssed at `https://grafana.loadtest.[DOMAIN]`. A dashboard should be preconfigured to connect to your Locust metrics. You can find it by navigating to Dashboards ->
+Grafana can be accessed at `https://grafana.loadtest.[DOMAIN]`. A dashboard called 'Locust' is preconfigured to connect to your Locust metrics. You can find it by navigating to Dashboards ->
 Manage. Kick off a load test from the Locust interface and enjoy your improved metrics dashboard!
 
 ### Prometheus
-Prometheus can be accessed at `https://prometheus.loadtest.[DOMAIN]`. You can use [PromQL](https://prometheus.io/docs/prometheus/latest/querying/basics/) and the api to write queries
-against the timeseries data and extract it.
+Prometheus can be accessed at `https://prometheus.loadtest.[DOMAIN]`. You can use [PromQL](https://prometheus.io/docs/prometheus/latest/querying/basics/) and the API to write queries
+against the time series data and extract it.
 
 ## Cleaning up
 
+Once you are done load testing and exporting data you can tear down your cluster to avoid additional costs.
+
     $ gcloud container clusters delete $CLUSTER --zone $ZONE
+
+Note that this leaves your Static IP and OAuth configurations intact and ready to use for the next test. If you so
+choose you can delete them too, but you'll need to recreate them the next time you load test and update your DNS to use
+your new IP address.
+
+
+## Additional Reading
+
+1. [Locust Documentation](https://docs.locust.io/en/0.14.6/)
+2. [Managed Certificates GKE](https://cloud.google.com/kubernetes-engine/docs/how-to/managed-certs)
+3. [IAP with GKE](https://cloud.google.com/iap/docs/enabling-kubernetes-howto#oauth-configure)
