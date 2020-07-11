@@ -71,7 +71,7 @@ once.
     $ gcloud compute addresses describe loadtest-address --global
 
 Then follow the instructions for your DNS provider to create an A-Record that maps the IP address you just created to
-the following value: `*.loadtest.[DOMAIN] (replace [DOMAIN] with your domain name.)
+the following value: `*.loadtest.[DOMAIN]` (replace [DOMAIN] with your domain name.)
 
 
 ### OAuth Config
@@ -123,7 +123,7 @@ In order to use Identity Aware Proxy (IAP) you will need to set up OAuth:
    If you want to enable step-mode you can change the `LOCUST_STEP` variables from `"false"` to `"true"` in
    `locust-controller.yaml` - note that you must do this in both the `lm-pod` and `lw-pod` Deployments.
 
-6. Replace [DOMAIN] in kubernetes-config/loadtest-cert.yaml and kubernetes-config/loadtest-ingress.yaml with your domain
+6. Replace [DOMAIN] in loadtest-cert.yaml and loadtest-ingress.yaml with your domain
    name:
 
         $ sed -i -e "s/\[DOMAIN\]/<your domain name>/g" kubernetes-config/loadtest-cert.yaml
@@ -183,7 +183,7 @@ based on subdomain. We will also set up Identity Aware Proxy (IAP) to further se
         $ kubectl apply -f kubernetes-config/config-default.yaml
 
 At this point you will need to wait for the managed SSL certificate to provision and for the health checks to complete.
-This can take about 10 minutes.
+This can take about 10-15 minutes.
 
 You can check the status of the certificate with the following command:
 
@@ -202,7 +202,7 @@ all read 'HEALTHY' you are ready to go.
 ## Running and Monitoring a Test
 
 
-The locust interface is now available at https://locust.loadtest.[DOMAIN]. The Locust master web interface enables you to execute the load testing tasks against the
+The locust interface is now available at `https://locust.loadtest.[DOMAIN]`. The Locust master web interface enables you to execute the load testing tasks against the
 system under test.
 
 To begin, specify the total number of users to simulate and a rate at which each user should be spawned. Next, click
@@ -218,11 +218,11 @@ deployments without redeploying them. For example, the following command scales 
 
 
 ### Grafana
-Grafana can be accesssed at https://grafana.loadtest.[DOMAIN]. A dashboard should be preconfigured to connect to your Locust metrics. You can find it by navigating to Dashboards ->
+Grafana can be accesssed at `https://grafana.loadtest.[DOMAIN]`. A dashboard should be preconfigured to connect to your Locust metrics. You can find it by navigating to Dashboards ->
 Manage. Kick off a load test from the Locust interface and enjoy your improved metrics dashboard!
 
 ### Prometheus
-Prometheus can be accessed at https://prometheus.loadtest.[DOMAIN]. You can use [PromQL](https://prometheus.io/docs/prometheus/latest/querying/basics/) and the api to write queries
+Prometheus can be accessed at `https://prometheus.loadtest.[DOMAIN]`. You can use [PromQL](https://prometheus.io/docs/prometheus/latest/querying/basics/) and the api to write queries
 against the timeseries data and extract it.
 
 ## Cleaning up
