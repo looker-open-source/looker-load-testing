@@ -71,7 +71,7 @@ once.
     $ gcloud compute addresses describe loadtest-address --global
 
 Then follow the instructions for your DNS provider to create an A-Record that maps the IP address you just created to
-the following value: `*.loadtest.[DOMAIN]` (replace [DOMAIN] with your domain name.)
+the following value: `*.loadtest.[DOMAIN]` (replace [DOMAIN] with your domain name, e.g. `example.com`)
 
 
 ### OAuth Config
@@ -124,7 +124,7 @@ In order to use Identity Aware Proxy (IAP) you will need to set up OAuth:
    `locust-controller.yaml` - note that you must do this in both the `lm-pod` and `lw-pod` Deployments.
 
 6. Replace [DOMAIN] in loadtest-cert.yaml and loadtest-ingress.yaml with your domain
-   name: (be sure to replace the placeholder with your actual domain name!)
+   name: (be sure to replace the placeholder with your actual domain name! - e.g. `example.com`)
 
         $ sed -i -e "s/\[DOMAIN\]/<your domain name>/g" kubernetes-config/loadtest-cert.yaml
         $ sed -i -e "s/\[DOMAIN\]/<your domain name>/g" kubernetes-config/loadtest-ingress.yaml
