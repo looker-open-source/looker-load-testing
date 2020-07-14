@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: looker-jmx-conf
+  labels:
+    name: looker-jmx-conf
+type: Opaque
+stringData:
+  looker_jmx.yml: |-
+    hostPort: "[LOOKER_HOST]"
+    username: monitorRole
+    password: [JMX_PASS]
+    rules:
+      - pattern: ".*"

@@ -1,0 +1,46 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: looker-pod
+  labels:
+    app: looker-pod
+spec:
+  ports:
+    - port: 5555
+      targetPort: looker-jmx
+      protocol: TCP
+  selector:
+    app: looker-pod
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: looker-pod
+  labels:
+    name: looker-pod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: looker-pod
+  template:
+    metadata:
+      labels:
+        app: looker-pod
+    spec:
+      containers:
+        - name: looker-pod
+          image: jcpistell/looker-jmx-prometheus-server:v1
+          ports:
+            - name: looker-jmx
+              containerPort: 5555
+              protocol: TCP
+          volumeMounts:
+            - name: looker-config-volume
+              mountPath: /etc/config/
+              readOnly: true
+        volumes:
+          - name: looker-config-volume
+            secret:
+              secretName: looker-jmx-conf
