@@ -1,18 +1,20 @@
 kind: Service
 apiVersion: v1
 metadata:
+  annotations:
+    beta.cloud.google.com/backend-config: '{"default": "config-default"}'
   name: grafana
   labels:
     app: grafana
 spec:
   ports:
-    - port: 3000
-      targetPort: http
+    - port: 80
+      targetPort: loc-grafana-web
       protocol: TCP
-      name: http
+      name: loc-grafana-web
   selector:
     app: grafana
-  type: LoadBalancer
+  type: NodePort
 ---
 apiVersion: apps/v1
 kind: "Deployment"
@@ -35,8 +37,17 @@ spec:
           name: grafana
           ports:
             - containerPort: 3000
-              name: http
+              name: loc-grafana-web
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /
+              port: loc-grafana-web
+            initialDelaySeconds: 5
+            periodSeconds: 5
           volumeMounts:
+            - name: grafana-config-provision
+              mountPath: /etc/grafana
             - name: grafana-datasource-provision
               mountPath: /etc/grafana/provisioning/datasources
             - name: grafana-dashboard-provision
@@ -44,6 +55,11 @@ spec:
             - name: grafana-dashboard-json
               mountPath: /var/lib/grafana/dashboards
       volumes:
+        - name: grafana-config-provision
+          configMap:
+            defaultMode: 420
+            name: grafana-config
+
         - name: grafana-datasource-provision
           configMap:
             defaultMode: 420
@@ -58,4 +74,3 @@ spec:
           configMap:
             defaultMode: 420
             name: grafana-dashboard-json-conf
-

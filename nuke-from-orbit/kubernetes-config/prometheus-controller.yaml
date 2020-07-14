@@ -1,19 +1,22 @@
 kind: Service
 apiVersion: v1
 metadata:
+  annotations:
+    beta.cloud.google.com/backend-config: '{"default": "config-default"}'
   name: prom-pod
-  labels: 
+  labels:
     app: prom-pod
 spec:
   ports:
-    - port: 9090
+    - port: 80
       targetPort: loc-prom-web
       protocol: TCP
+      name: loc-prom-web
   selector:
     app: prom-pod
   type: NodePort
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: prom-pod
@@ -37,6 +40,12 @@ spec:
             - name: loc-prom-web
               containerPort: 9090
               protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /graph
+              port: loc-prom-web
+            initialDelaySeconds: 5
+            periodSeconds: 5
           volumeMounts:
             - name: prometheus-config-volume
               mountPath: /etc/prometheus/
@@ -47,7 +56,6 @@ spec:
           configMap:
             defaultMode: 420
             name: prom-conf
-  
+
         - name: prometheus-storage-volume
           emptyDir: {}
-

@@ -1,12 +1,14 @@
 kind: Service
 apiVersion: v1
 metadata:
+  annotations:
+    beta.cloud.google.com/backend-config: '{"default": "config-default"}'
   name: lm-pod
   labels:
     app: lm-pod
 spec:
   ports:
-    - port: 8089
+    - port: 80
       targetPort: loc-master-web
       protocol: TCP
       name: loc-master-web
@@ -20,7 +22,7 @@ spec:
       name: loc-master-p2
   selector:
     app: lm-pod
-  type: LoadBalancer
+  type: NodePort
 ---
 apiVersion: apps/v1
 kind: "Deployment"
@@ -158,7 +160,7 @@ spec:
           image: containersol/locust_exporter:v0.3.0
           env:
             - name: LOCUST_EXPORTER_URI
-              value: http://lm-pod:8089
+              value: http://lm-pod:80
           ports:
             - name: lexp-web
               containerPort: 9646

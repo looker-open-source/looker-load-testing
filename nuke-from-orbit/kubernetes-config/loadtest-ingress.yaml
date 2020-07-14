@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: loadtest-ingress
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: loadtest-address
+    networking.gke.io/managed-certificates: loadtest-cert
+spec:
+  rules:
+    - host: locust.loadtest.[DOMAIN]
+      http:
+        paths:
+          - path: /*
+            backend:
+              serviceName: lm-pod
+              servicePort: 80
+    - host: prometheus.loadtest.[DOMAIN]
+      http:
+        paths:
+          - path: /*
+            backend:
+              serviceName: prom-pod
+              servicePort: 80
+    - host: grafana.loadtest.[DOMAIN]
+      http:
+        paths:
+          - path: /*
+            backend:
+              serviceName: grafana
+              servicePort: 80
