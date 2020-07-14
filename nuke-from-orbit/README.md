@@ -38,9 +38,56 @@ on a dashboard this is equivalent to approximately 600 concurrent users.
 ## Prerequisites
 
 In order for https and IAP to work correctly you will need to own or have control of a registered domain. You should
-have the ability to create an a-record from that domain's DNS.
+have the ability to create an A-Record from that domain's DNS.
 
 ## Before you begin
+
+The following steps need to be completed before you begin to deploy the load tester. They should only need to be done
+one time per project - during subsequent deployments you won't need to repeat these steps (unless you delete any of the
+assets of course)
+
+Open Cloud Shell to execute the commands listed in this tutorial.
+
+### Enable APIs
+
+The Following services should be enabled in your project: Cloud Build, Kubernetes Engine, Cloud Storage
+
+    $ gcloud services enable \
+      cloudbuild.googleapis.com \
+      compute.googleapis.com \
+      container.googleapis.com \
+      containeranalysis.googleapis.com \
+      containerregistry.googleapis.com
+
+### Static IP and DNS
+
+Create a static IP. This will be used by our ingress controller and will allow you to set up your DNS records just
+once:
+
+    $ gcloud compute addresses create loadtest-address --global
+    $ gcloud compute addresses describe loadtest-address --global
+
+Then follow the instructions for your DNS provider to create an A-Record that maps the IP address you just created to
+the following value: `*.loadtest.[DOMAIN]` (replace [DOMAIN] with your domain name, e.g. `example.com`)
+
+### OAuth Config
+
+In order to use Identity Aware Proxy (IAP) you will need to set up OAuth:
+
+1. Follow the instructions for [Configuring the OAuth Consent
+   Screen](https://cloud.google.com/iap/docs/enabling-kubernetes-howto#oauth-configure)
+
+2. Follow the instructions for [Creating OAuth Credentials](https://cloud.google.com/iap/docs/enabling-kubernetes-howto#oauth-credentials).
+   Make a note of your client-id and client-secret
+
+### Download the code
+
+Clone this repo in a local directory on your cloud shell environment and cd to the `nuke-from-orbit` directory:
+
+        $ git clone https://github.com/JCPistell/looker-load-testing.git
+        $ cd looker-load-testing/nuke-from-orbit
+
+## Deploy The Load Tester
 
 Open Cloud Shell to execute the commands listed in this tutorial.
 
@@ -53,40 +100,8 @@ Define environment variables for the project id, region and zone you want to use
     $ gcloud config set compute/region $REGION
     $ gcloud config set compute/zone $ZONE
 
-**Note:** Following services should be enabled in your project: Cloud Build, Kubernetes Engine, Cloud Storage
-
-    $ gcloud services enable \
-      cloudbuild.googleapis.com \
-      compute.googleapis.com \
-      container.googleapis.com \
-      containeranalysis.googleapis.com \
-      containerregistry.googleapis.com
-
-### Static IP and DNS
-
-If this is your first time following these instructions, create a static IP. This will be used by our ingress controller and will allow you to set up your DNS records just
-once.
-
-    $ gcloud compute addresses create loadtest-address --global
-    $ gcloud compute addresses describe loadtest-address --global
-
-Then follow the instructions for your DNS provider to create an A-Record that maps the IP address you just created to
-the following value: `*.loadtest.[DOMAIN]` (replace [DOMAIN] with your domain name, e.g. `example.com`)
-
-
-### OAuth Config
-
-In order to use Identity Aware Proxy (IAP) you will need to set up OAuth:
-
-1. Follow the instructions for [Configuring the OAuth Consent
-   Screen](https://cloud.google.com/iap/docs/enabling-kubernetes-howto#oauth-configure)
-
-2. Follow the instructions for [Creating OAuth Credentials](https://cloud.google.com/iap/docs/enabling-kubernetes-howto#oauth-credentials).
-   Make a note of your client-id and client-secret
-
-## Setup
-
-1. Create GKE cluster
+1. Create GKE cluster. In this example we're using a cluster of 3 c2-standard-8 machines but you may need a different
+   setup depending on your load tests. Note the cluster version - make sure you're using >= 1.16.9.
 
         $ gcloud container clusters create $CLUSTER \
           --zone $ZONE \
@@ -99,24 +114,28 @@ In order to use Identity Aware Proxy (IAP) you will need to set up OAuth:
           --zone $ZONE \
           --project $PROJECT
 
-2. Clone this repo in a local directory on your cloud shell environment and cd to the `nuke-from-orbit` directory
 
-        $ git clone https://github.com/JCPistell/looker-load-testing.git
-        $ cd looker-load-testing/nuke-from-orbit
-
-3. **Very Important!** Modify the contents of `docker-image/locust-tasks/tasks.py` to suit your testing criteria
+2. **Very Important!** Modify the contents of `docker-image/locust-tasks/tasks.py` to suit your testing criteria
 
 > The example `tasks.py` outlines a standard dashboard rendering performance test. Near the top of the file you will
 > want to modify the `SITE` and `DASH_ID` variables to match the Looker instance you are testing and the relevant
 > dashboard id. Different testing goals will require specific test code - Locust is flexible enough to handle just about
 > any kind of test you can think of!
 
-4. Build docker image and store it in your project's container registry. Note this command assumes you are in the
+3. Build docker image and store it in your project's container registry. Note this command assumes you are in the
    `nuke-from-orbit` directory.
 
         $ gcloud builds submit --tag gcr.io/$PROJECT/locust-tasks:latest docker-image/.
 
-5. Replace [PROJECT_ID] in locust-controller.yaml with the deployed endpoint and project-id respectively.
+4. Ensure you are using the latest version of the code and are in the repo's `nuke-from-orbit` directory - all
+  commands assume that as your working directory.
+
+        $ git checkout master
+        $ git pull
+        $ cd <path to nuke-from-orbit>
+
+5. Replace [PROJECT_ID] in locust-controller.yaml with the deployed endpoint and project-id respectively. Note that if
+   you haven't pulled any new updates this step may be unnecessary, but it's safe to perform every time.
 
         $ sed -i -e "s/\[PROJECT_ID\]/$PROJECT/g" kubernetes-config/locust-controller.yaml
 
@@ -124,7 +143,8 @@ In order to use Identity Aware Proxy (IAP) you will need to set up OAuth:
    `locust-controller.yaml` - note that you must do this in both the `lm-pod` and `lw-pod` Deployments.
 
 6. Replace [DOMAIN] in loadtest-cert.yaml and loadtest-ingress.yaml with your domain
-   name: (be sure to replace the placeholder with your actual domain name! - e.g. `example.com`)
+   name: (be sure to replace the placeholder with your actual domain name! - e.g. `example.com`) Note that if
+   you haven't pulled any new updates this step may be unnecessary, but it's safe to perform every time.
 
         $ sed -i -e "s/\[DOMAIN\]/<your domain name>/g" kubernetes-config/loadtest-cert.yaml
         $ sed -i -e "s/\[DOMAIN\]/<your domain name>/g" kubernetes-config/loadtest-ingress.yaml
@@ -133,19 +153,30 @@ In order to use Identity Aware Proxy (IAP) you will need to set up OAuth:
 
         $ kubectl apply -f kubernetes-config/loadtest-cert.yaml
 
-8. Create a Kubernetes secret called `website-creds` that contains two entries - `username` and `password` - that tie to
-   the Looker instance you will be logging into (the instance you specified in step 3):
+8. Create a Kubernetes secret called `iap-secret` for your OAuth client-id and client-secret: (be sure to replace the
+   placeholders with your actual values!)
+
+        $ echo -n <your_client_id> > client_id.txt
+        $ echo -n <your_client_secret> > client_secret.txt
+        $ kubectl create secret generic iap-secret --from-file=client_id=./client_id.txt --from-file=client_secret=./client_secret.txt
+
+9. Deploy the backend config:
+
+        $ kubectl apply -f kubernetes-config/config-default.yaml
+
+10. Create a Kubernetes secret called `website-creds` that contains two entries - `username` and `password` - that tie to
+   the Looker instance you will be logging into (the instance you specified in step 2):
 
         $ echo -n <your username> > username.txt
         $ echo -n <your password> > pass.txt
         $ kubectl create secret generic website-creds --from-file=username=./username.txt --from-file=password=./pass.txt
 
-9. Deploy Locust master and worker nodes:
+11. Deploy Locust master and worker nodes:
 
         $ kubectl apply -f kubernetes-config/locust-controller.yaml
 
 
-## Better Monitoring and Data Retention
+### Better Monitoring and Data Retention
 
 While we can now load test Looker at scale the data available from locust out of the box leaves something to be desired.
 Summary metrics are available for download, but the rich time series data is not, and the charts reset on every refresh.
@@ -162,7 +193,7 @@ Grafana to collect and display our load testing metrics.
         $ kubectl apply -f kubernetes-config/grafana-config.yaml
         $ kubectl apply -f kubernetes-config/grafana-controller.yaml
 
-## Configure Ingress
+### Configure Ingress
 
 Now that we have our services configured we need to access them. This ingress config will set up a layer-7 load balancer
 based on sub-domain. We will also set up Identity Aware Proxy (IAP) to further secure our application.
@@ -173,15 +204,6 @@ based on sub-domain. We will also set up Identity Aware Proxy (IAP) to further s
 
 2. Follow the instructions for [Setting up IAP
    Access](https://cloud.google.com/iap/docs/enabling-kubernetes-howto#iap-access)
-
-3. Create a Kubernetes secret called `iap-secret` for your OAuth client-id and client-secret: (be sure to replace the
-   placeholders with your actual values!)
-
-        $ kubectl create secret generic iap-secret --from-literal=client_id=<your_client_id> --from-literal=client_secret=<your client_secret>
-
-4. Deploy the backend config:
-
-        $ kubectl apply -f kubernetes-config/config-default.yaml
 
 At this point you will need to wait for the managed SSL certificate to provision and for the health checks to complete.
 This can take about 10-15 minutes.
@@ -199,6 +221,7 @@ You can check the status of your load balancer ingress with the following comman
 In the annotations section you will be able to see the status of the health checks for each backend service. Once they
 all read 'HEALTHY' you are ready to go.
 
+Note that IAP may take a few more minutes to set up authentication, even after https and routing are configured.
 
 ## Running and Monitoring a Test
 
