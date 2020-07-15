@@ -6,7 +6,7 @@ metadata:
     app: looker-pod
 spec:
   ports:
-    - port: 5555
+    - port: 9505
       targetPort: looker-jmx
       protocol: TCP
   selector:
@@ -34,7 +34,7 @@ spec:
           image: jcpistell/looker-jmx-prometheus-server:v1
           ports:
             - name: looker-jmx
-              containerPort: 5555
+              containerPort: 9505
               protocol: TCP
           volumeMounts:
             - name: looker-config-volume

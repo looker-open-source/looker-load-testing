@@ -17,4 +17,4 @@ data:
       - job_name: 'looker'
         scrape_interval: 2s
         static_configs:
-          - targets: ['looker-pod:5555']
+          - targets: ['looker-pod:9505']
