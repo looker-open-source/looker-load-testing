@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudwatch-conf
+  labels:
+    name: cloudwatch-conf
+data:
+  config.yml: |-
+    region: us-east-1
+    metrics:
+      - aws_namespace: AWS/ELB
+        aws_metric_name: RequestCount
+        aws_dimensions: [AvailabilityZone, LoadBalancerName]
+        aws_dimension_select:
+          LoadBalancerName: [myLB]
+        aws_statistics: [Sum]
+      - aws_namespace: AWS/RDS
+        aws_metric_name: CPUUtilization
+        aws_dimensions: [DBInstanceIdentifier]
+        aws_dimension_select:
+          DBInstanceIdentifier: [myDB]
+        aws_statistics: [Sum]

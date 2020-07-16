@@ -1,0 +1,51 @@
+kind: Service
+apiVersion: v1
+metadata:
+  annotations:
+  name: cloudwatch-pod
+  labels:
+    app: cloudwatch-pod
+spec:
+  ports:
+    - port: 80
+      targetPort: cw-web
+      protocol: TCP
+      name: cw-web
+  selector:
+    app: cloudwatch-pod
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudwatch-pod
+  labels:
+    name: cloudwatch-pod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudwatch-pod
+  template:
+    metadata:
+      labels:
+        app: cloudwatch-pod
+    spec:
+      containers:
+        - name: cloudwatch-pod
+          image: prom/cloudwatch-exporter:cloudwatch_exporter-0.8.0
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: aws-creds
+                  key: aws-access-key
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aws-creds
+                  key: aws-secret-key
+          ports:
+            - name: cw-web
+              containerPort: 9106
+              protocol: TCP
