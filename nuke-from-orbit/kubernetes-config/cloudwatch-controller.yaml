@@ -45,6 +45,11 @@ spec:
                 secretKeyRef:
                   name: aws-creds
                   key: aws-secret-key
+            - name: AWS_SESSION_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: aws-creds
+                  key: aws-session-token
           ports:
             - name: cw-web
               containerPort: 9106
