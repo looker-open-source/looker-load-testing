@@ -18,3 +18,7 @@ data:
         scrape_interval: 2s
         static_configs:
           - targets: ['[LOOKER HOST]:9810']
+      - job_name: 'cloudwatch'
+        scrape_interval: 2s
+        static_configs:
+          - targets: ['cloudwatch-pod:9106']
