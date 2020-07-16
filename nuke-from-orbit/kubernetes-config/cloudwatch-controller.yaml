@@ -49,3 +49,11 @@ spec:
             - name: cw-web
               containerPort: 9106
               protocol: TCP
+          volumeMounts:
+            - name: cloudwatch-config-volume
+              mountPath: /config/
+      volumes:
+        - name: cloudwatch-config-volume
+          configMap:
+            defaultMode: 420
+            name: cloudwatch-conf
