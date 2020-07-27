@@ -26,6 +26,10 @@ resource "google_container_cluster" "gke_load_test" {
 
 }
 
+resource "google_compute_address" "loadtest_lb" {
+  name = "loadtest_lb_address"
+}
+
 data "google_compute_instance_group" "cluster_group" {
   self_link = google_container_cluster.gke_load_test.instance_group_urls[0]
 }
@@ -37,4 +41,8 @@ data "google_compute_instance" "cluster_instance" {
 
 output "cluster_instance_ips" {
   value = formatlist("%s%s", data.google_compute_instance.cluster_instance.*.network_interface.0.access_config.0.nat_ip, "/32")
+}
+
+output "cluster_lb_ip" {
+  value = google_compute_address.loadtest_lb.address
 }
