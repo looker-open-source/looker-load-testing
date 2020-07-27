@@ -6,7 +6,7 @@ provider "google" {
 }
 
 resource "google_container_cluster" "gke_load_test" {
-  name = "gke_load_test"
+  name = "gke-load-test"
   location = var.zone
   remove_default_node_pool = true
   initial_node_count = 1
@@ -15,7 +15,7 @@ resource "google_container_cluster" "gke_load_test" {
 resource "google_container_node_pool" "primary_nodes" {
   name = "gke_load_test_node_pool"
   location = var.zone
-  cluster = google_container_cluster.primary_name
+  cluster = google_container_cluster.gke_load_test.name
   node_count = var.node_count
   version = "1.16.9-gke.6"
 
