@@ -27,7 +27,7 @@ resource "google_container_cluster" "gke_load_test" {
 }
 
 data "google_compute_instance_group" "cluster_group" {
-  self_link = google_container_node_pool.primary_nodes.instance_group_urls[0]
+  self_link = google_container_cluster.gke_load_test.instance_group_urls[0]
 }
 
 data "google_compute_instance" "cluster_instance" {
