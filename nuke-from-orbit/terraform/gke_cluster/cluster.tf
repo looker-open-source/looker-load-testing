@@ -24,11 +24,11 @@ resource "google_container_node_pool" "primary_nodes" {
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform"
     ]
+    metadata = {
+      disable-legacy-endpoints = "true"
+    }
   }
 
-  metadata = {
-    disable-legacy-endpoints = "true"
-  }
 }
 
 data "google_compute_instance_group" "cluster_group" {
