@@ -8,7 +8,6 @@ provider "google" {
 resource "google_container_cluster" "gke_load_test" {
   name = "gke-load-test"
   location = var.zone
-  remove_default_node_pool = true
   initial_node_count = var.node_count
 
   node_version = "1.16.9-gke.6"
@@ -27,7 +26,7 @@ resource "google_container_cluster" "gke_load_test" {
 }
 
 resource "google_compute_address" "loadtest_lb" {
-  name = "loadtest_lb_address"
+  name = "loadtest-lb-address"
 }
 
 data "google_compute_instance_group" "cluster_group" {
