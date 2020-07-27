@@ -30,16 +30,3 @@ resource "google_container_node_pool" "primary_nodes" {
   }
 
 }
-
-data "google_compute_instance_group" "cluster_group" {
-  self_link = google_container_node_pool.primary_nodes.instance_group_urls[0]
-}
-
-data "google_compute_instance" "cluster_instance" {
-  count = length(tolist(data.google_compute_instance_group.cluster_group.instances))
-  self_link = tolist(data.google_compute_instance_group.cluster_group.instances)[count.index]
-}
-
-output "cluster_instance_ips" {
-  value = formatlist("%s%s", data.google_compute_instance.cluster_instance.*.network_interfaces.0.access_config.0.nat_ip, "/32")
-}
