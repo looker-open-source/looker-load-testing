@@ -18,7 +18,7 @@ data:
       - job_name: 'looker'
         scrape_interval: 2s
         static_configs:
-          - targets: ['[LOOKER HOST]:9810']
+          - targets: [{% for l in looker_hosts %} {{l}}:9810 {% endfor %}]
       - job_name: 'cloudwatch'
         scrape_interval: 2s
         static_configs:

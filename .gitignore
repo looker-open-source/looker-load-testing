@@ -7,3 +7,9 @@ client-id.txt
 client-secret.txt
 client_id.txt
 client_secret.txt
+jcp-loadtest-sandbox-9b4258773b60.json
+.terraform/
+*.tfstate
+*.tfstate.backup
+variables.tf
+output.json
