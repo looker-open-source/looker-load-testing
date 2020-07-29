@@ -18,7 +18,7 @@ data:
       - job_name: 'looker'
         scrape_interval: 2s
         static_configs:
-          - targets: ['[LOOKER HOST]:9810']
+          - targets: [ec2-34-233-85-95.compute-1.amazonaws.com:9810, ec2-42-233-85-95.compute-1.amazonaws.com:9810]
       - job_name: 'cloudwatch'
         scrape_interval: 2s
         static_configs:

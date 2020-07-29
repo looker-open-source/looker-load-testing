@@ -5,6 +5,6 @@ metadata:
   name: loadtest-cert
 spec:
   domains:
-    - locust.loadtest.[DOMAIN]
-    - prometheus.loadtest.[DOMAIN]
-    - grafana.loadtest.[DOMAIN]
+    - locust.jcp-loadtest.lookersandbox.com
+    - prometheus.jcp-loadtest.lookersandbox.com
+    - grafana.loadtest.jcp-loadtest.lookersandbox.com
