@@ -8,21 +8,21 @@ metadata:
     networking.gke.io/managed-certificates: loadtest-cert
 spec:
   rules:
-    - host: locust.loadtest.{{domain}}
+    - host: locust.{{loadtest_dns_domain}}
       http:
         paths:
           - path: /*
             backend:
               serviceName: lm-pod
               servicePort: 80
-    - host: prometheus.loadtest.{{domain}}
+    - host: prometheus.{{loadtest_dns_domain}}
       http:
         paths:
           - path: /*
             backend:
               serviceName: prom-pod
               servicePort: 80
-    - host: grafana.loadtest.{{domain}}
+    - host: grafana.{{loadtest_dns_domain}}
       http:
         paths:
           - path: /*

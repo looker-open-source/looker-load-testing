@@ -5,6 +5,6 @@ metadata:
   name: loadtest-cert
 spec:
   domains:
-    - locust.loadtest.{{domain}}
-    - prometheus.loadtest.{{domain}}
-    - grafana.loadtest.{{domain}}
+    - locust.{{loadtest_dns_domain}}
+    - prometheus.{{loadtest_dns_domain}}
+    - grafana.loadtest.{{loadtest_dns_domain}}
