@@ -13,3 +13,4 @@ jcp-loadtest-sandbox-9b4258773b60.json
 *.tfstate.backup
 variables.tf
 output.json
+nuke-from-orbit/kubernetes-config/*.yaml
