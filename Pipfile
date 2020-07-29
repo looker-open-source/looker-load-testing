@@ -11,7 +11,19 @@ flake8 = "*"
 selenium = "*"
 realbrowserlocusts = "*"
 locustio = "==0.14.6"
-prometheus-client = "*"
+looker-sdk = "*"
+requests = "*"
+beautifulsoup4 = "*"
+jinja2 = "*"
+gitpython = "*"
+fabric = "*"
+backoff-utils = "*"
+kubernetes = "*"
+python-terraform = "*"
+looker-deployer = "*"
 
 [requires]
 python_version = "3.7"
+
+[pipenv]
+allow_prereleases = true
