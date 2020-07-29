@@ -1,7 +1,7 @@
 provider "aws" {
   region = var.aws_region
   shared_credentials_file = "~/.aws/credentials"
-  profile = "sandbox"
+  profile = var.aws_profile
   version = "~> 2.0"
 }
 
@@ -643,7 +643,7 @@ output "host_url" {
   value = "https://${var.env}.${var.domain}"
 }
 
-output "node_public_dns" {
+output "looker_hosts" {
   value = aws_eip.ip-looker-env.*.public_dns
 }
 
@@ -665,4 +665,12 @@ output "db_identifier" {
 
 output "efs_id" {
   value = aws_efs_file_system.looker-efs-fs.*.id
+}
+
+output "aws_region" {
+  value = var.aws_region
+}
+
+output "aws_profile" {
+  value = var.aws_profile
 }

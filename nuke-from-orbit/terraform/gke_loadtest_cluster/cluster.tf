@@ -46,3 +46,15 @@ output "cluster_instance_ips" {
 output "cluster_lb_ip" {
   value = google_compute_address.loadtest_lb.address
 }
+
+output "project_id" {
+  value = var.project
+}
+
+output "region" {
+  value = var.region
+}
+
+output "zone" {
+  value = var.zone
+}
