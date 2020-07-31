@@ -1,0 +1,199 @@
+#!/usr/bin/env bash
+
+# Check to make sure required programs are installed
+
+if ! [ -x "$(command -v terraform)" ]; then
+  echo 'Error: terraform is not installed. Please refer to https://learn.hashicorp.com/terraform/getting-started/install.html for instructions.' >&2
+  exit 1
+fi
+
+if ! [ -x "$(command -v gcloud)" ]; then
+  echo 'Error: gcloud is not installed. Please refer to https://cloud.google.com/sdk/install for instructions.' >&2
+  exit 1
+fi
+
+if ! [ -x "$(command -v kubectl)" ]; then
+  echo 'Error: kubectl is not installed. Please run `gcloud components install kubectl` and try again.' >&2
+  exit 1
+fi
+
+if ! [ -x "$(command -v pipenv)" ]; then
+  echo 'Error: pipenv is not installed. Please refer to https://github.com/pypa/pipenv for instructions.' >&2
+  exit 1
+fi
+
+if ! [ -x "$(command -v gzr)" ]; then
+  echo 'Error: gazer is not installed. Please ensure ruby is installed and run `gem install gazer`.' >&2
+  exit 1
+fi
+
+if [ -z "$PIPENV_ACTIVE" ]; then
+  echo 'Looks like your pipenv environment has not been activated. Please return to project root and run `pipenv shell` before proceeding. If you have not yet initialized your pipenv environment you will need to run `pipenv install --python 3.7 --ignore-pipfile` from the project root.' >&2
+  exit 1
+fi
+
+# Set convenience variables
+script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+param_file=${script_dir}/params.json
+config_dir=${script_dir}/kubernetes-config
+
+gke_cluster_deploy() {
+  cd ${script_dir}/terraform/gke_cluster_deploy
+  terraform init
+  terraform apply -auto-approve
+  terraform output -json > output.json
+  cd $script_dir
+}
+
+loadtest_dns_deploy() {
+  cd ${script_dir}/terraform/aws_loadtest_dns
+  terraform init
+  terraform apply -auto-approve
+  terraform output -json > output.json
+  cd $script_dir
+}
+
+looker_deploy() {
+  cd ${script_dir}/terraform/aws_looker_instance
+  terraform init
+  terraform apply -auto-approve
+  terraform output -json > output.json
+  cd $script_dir
+}
+
+gke_cluster_destroy() {
+  cd ${script_dir}/terraform/gke_cluster_deploy
+  terraform destroy -auto-approve
+  cd $script_dir
+}
+
+loadtest_dns_destroy() {
+  cd ${script_dir}/terraform/aws_loadtest_dns
+  terraform destroy -auto-approve
+  cd $script_dir
+}
+
+looker_destroy() {
+  cd ${script_dir}/terraform/aws_looker_instance
+  terraform destroy -auto-approve
+  cd $script_dir
+}
+
+parse_config() {
+  python ${script_dir}/kubernetes-config/parse_kube_templates.py
+}
+
+provision_looker() {
+  python ${script_dir}/looker_setup.py
+}
+
+set_variables() {
+  gcp_project=$(cat $param_file | jq -r '.gcp_project_id')
+  loadtest_cluster_name=$(cat $param_file | jq -r '.loadtest_cluster_name')
+  gcp_oauth_client_id=$(cat $param_file | jq -r '.gcp_oauth_client_id')
+  gcp_oauth_client_secret=$(cat $param_file | jq -r '.gcp_oauth_client_secret')
+  gcp_zone=$(cat $param_file | jq -r '.gcp_zone')
+  gcp_project_id=$(cat $param_file | jq -r '.gcp_project_id')
+  looker_user=$(cat $param_file | jq -r '.looker_user')
+  looker_pass=$(cat $param_file | jq -r '.looker_pass')
+  aws_access_key=$(cat $param_file | jq -r '.aws_access_key')
+  aws_secret_key=$(cat $param_file | jq -r '.aws_secret_access_key')
+  aws_session_token=$(cat $param_file | jq -r '.aws_session_token')
+}
+
+build_loadtest_image() {
+  gcloud builds submit --tag gcr.io/$gcp_project/locust-tasks:latest docker-image/.
+}
+
+get_kubernetes_creds() {
+  gcloud container clusters get-credentials $loadtest_cluster_name \
+    --zone $gcp_zone \
+    --project $gcp_project_id
+}
+
+set_oauth_secret() {
+  kubectl create secret generic iap-secret \
+    --from-literal=client_id=$gcp_oauth_client_id \
+    --from-literal=client_secret=$gcp_oauth_client_secret
+}
+
+set_looker_secret() {
+  kubectl create secret generic website-creds \
+    --from-literal=username=$looker_user \
+    --from-literal=password=$looker_pass
+}
+
+set_aws_secret() {
+  kubectl create secret generic aws-creds \
+    --from-literal=aws-access-key=$aws_access_key \
+    --from-literal=aws-secret-key=$aws_secret_key \
+    --from-literal=aws-session-token=$aws_session_token
+}
+
+deploy_managed_certificate() {
+  kubectl apply -f ${config_dir}/loadtest-cert.yaml
+}
+
+deploy_backend_config() {
+  kubectl apply -f ${config_dir}/config-default.yaml
+}
+
+deploy_locust() {
+  kubectl apply -f ${config_dir}/locust-controller.yaml
+}
+
+deploy_prometheus() {
+  kubectl apply -f ${config_dir}/prometheus-config.yaml
+  kubectl apply -f ${config_dir}/prometheus-controller.yaml
+}
+
+deploy_grafana() {
+  kubectl apply -f ${config_dir}/grafana-config.yaml
+  kubectl apply -f ${config_dir}/grafana-controller.yaml
+}
+
+deploy_ingress() {
+  kubectl apply -f ${config_dir}/loadtest-ingress.yaml
+}
+
+setup() {
+  gke_cluster_deploy
+  loadtest_dns_deploy
+  looker_deploy
+  parse_config
+  set_variables
+  provision_looker
+  build_loadtest_image
+  get_kubernetes_creds
+  set_oauth_secret
+  set_looker_secret
+  set_aws_secret
+  deploy_managed_certificate
+  deploy_backend_config
+  deploy_locust
+  deploy_prometheus
+  deploy_grafana
+  deploy_ingress
+}
+
+
+teardown() {
+  looker_destroy
+  loadtest_dns_destroy
+  gke_cluster_destroy
+}
+
+case "$1" in
+  setup)
+    setup
+  ;;
+  teardown)
+    teardown
+  ;;
+  ?)
+    echo 'Please specify either `setup` or `teardown`'
+    exit 1
+  ;;
+esac
+
+exit 0
