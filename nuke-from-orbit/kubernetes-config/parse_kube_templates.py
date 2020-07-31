@@ -19,7 +19,7 @@ def combine_tf_outputs():
     return flattened
 
 
-def add_aws_creds(values_dict):
+def add_other_creds(values_dict):
     aws_path = Path(Path.home().joinpath(".aws", "credentials"))
     assert aws_path.exists(), "Couldn't find AWS credentials file! Make sure it exists"
 
@@ -39,6 +39,13 @@ def add_aws_creds(values_dict):
 
     combined = {**values_dict, **aws_dict}
 
+    user_config = SCRIPT_PATH.joinpath("..", "user_params.json")
+    if user_config.exists():
+        with open(user_config) as f:
+            user_dict = json.load(f)
+
+        combined = {**combined, **user_dict}
+
     # export file for future use
     with open(SCRIPT_PATH.joinpath("..", "params.json"), "w") as f:
         json.dump(combined, f)
@@ -57,7 +64,7 @@ def render_kubernetes_templates(values_dict):
 
 def main():
     values_dict = combine_tf_outputs()
-    add_aws_creds(values_dict)
+    add_other_creds(values_dict)
     render_kubernetes_templates(values_dict)
 
 
