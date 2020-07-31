@@ -39,22 +39,26 @@ data "google_compute_instance" "cluster_instance" {
   self_link = tolist(data.google_compute_instance_group.cluster_group.instances)[count.index]
 }
 
-output "cluster_instance_ips" {
+output "loadtest_cluster_instance_ips" {
   value = formatlist("%s%s", data.google_compute_instance.cluster_instance.*.network_interface.0.access_config.0.nat_ip, "/32")
 }
 
-output "cluster_lb_ip" {
+output "loadtest_cluster_lb_ip" {
   value = google_compute_address.loadtest_lb.address
 }
 
-output "project_id" {
+output "gcp_project_id" {
   value = var.project
 }
 
-output "region" {
+output "gcp_region" {
   value = var.region
 }
 
-output "zone" {
+output "gcp_zone" {
   value = var.zone
+}
+
+output "loadtest_cluster_name" {
+  value = google_container_cluster.gke_load_test.name
 }

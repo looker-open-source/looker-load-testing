@@ -1,13 +1,14 @@
-import os
 from jinja2 import Template
 import json
 import configparser
 from pathlib import Path
 
+SCRIPT_PATH = Path(__file__).resolve().parent
+
 
 def combine_tf_outputs():
 
-    files = Path("terraform").glob("**/output.json")
+    files = SCRIPT_PATH.joinpath("..", "terraform").glob("**/output.json")
     output_dict = {}
     for file in files:
         section = json.loads(file.read_text())
@@ -15,33 +16,38 @@ def combine_tf_outputs():
 
     flattened = {k: v["value"] for k, v in output_dict.items()}
 
-    # set env variables for future kubernetes secrets
-    os.environ["LOOKER_USER"] = flattened["user"]
-    os.environ["LOOKER_PASS"] = flattened["pass"]
-
     return flattened
 
 
-def add_aws_creds(profile):
+def add_aws_creds(values_dict):
     aws_path = Path(Path.home().joinpath(".aws", "credentials"))
     assert aws_path.exists(), "Couldn't find AWS credentials file! Make sure it exists"
 
+    profile = values_dict["aws_profile"]
     config = configparser.ConfigParser()
     config.read(str(aws_path))
     target_profile = config[profile]
 
-    os.environ["AWS_ACCESS_KEY"] = target_profile["aws_access_key_id"]
-    os.environ["AWS_SECRET_KEY"] = target_profile["aws_secret_access_key"]
+    aws_dict = {
+        "aws_access_key": target_profile["aws_access_key_id"],
+        "aws_secret_access_key": target_profile["aws_secret_access_key"],
+    }
 
     # aws_session_token is optional
     if target_profile.get("aws_session_token"):
-        os.environ["AWS_SESSION_TOKEN"] = target_profile["aws_session_token"]
+        aws_dict["aws_session_token"] = target_profile["aws_session_token"]
+
+    combined = {**values_dict, **aws_dict}
+
+    # export file for future use
+    with open(SCRIPT_PATH.joinpath("..", "params.json"), "w") as f:
+        json.dump(combined, f)
 
 
 def render_kubernetes_templates(values_dict):
-    files = Path("kubernetes-config/templates").glob("*.yaml")
+    files = Path("templates").glob("*.yaml")
     for file in files:
-        dest_file = Path(file.parent.parent.joinpath(file.name))
+        dest_file = SCRIPT_PATH.joinpath(file.name)
         template = file.read_text()
         rendered = Template(template).render(**values_dict)
 
@@ -51,7 +57,7 @@ def render_kubernetes_templates(values_dict):
 
 def main():
     values_dict = combine_tf_outputs()
-    add_aws_creds(values_dict["aws_profile"])
+    add_aws_creds(values_dict)
     render_kubernetes_templates(values_dict)
 
 

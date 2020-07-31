@@ -146,7 +146,7 @@ resource "aws_security_group" "ingress-all-looker" {
 
   # Monitoring
   ingress {
-    cidr_blocks = data.terraform_remote_state.gke_cluster.outputs.cluster_instance_ips
+    cidr_blocks = data.terraform_remote_state.gke_cluster.outputs.loadtest_cluster_instance_ips
     from_port = 9810
     to_port = 9810
     protocol = "tcp"
@@ -631,19 +631,19 @@ resource "random_string" "password" {
   override_special = "#%^*-="
 }
 
-output "user" {
+output "looker_user" {
   value = var.technical_contact_email
 }
 
-output "pass" {
+output "looker_pass" {
   value = "abc_${random_string.password.result}"
 }
 
-output "host_url" {
+output "looker_url" {
   value = "https://${var.env}.${var.domain}"
 }
 
-output "looker_hosts" {
+output "looker_nodes" {
   value = aws_eip.ip-looker-env.*.public_dns
 }
 
@@ -655,15 +655,15 @@ output "key" {
   value = var.key
 }
 
-output "elb_name" {
+output "looker_lb_name" {
   value = aws_elb.dev-looker-elb.name
 }
 
-output "db_identifier" {
+output "looker_db_identifier" {
   value = aws_db_instance.looker-app-db.*.identifier
 }
 
-output "efs_id" {
+output "looker_nfs_id" {
   value = aws_efs_file_system.looker-efs-fs.*.id
 }
 

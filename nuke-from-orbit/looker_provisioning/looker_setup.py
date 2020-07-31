@@ -17,12 +17,14 @@ from jinja2 import Template
 from looker_sdk import models
 from pathlib import Path
 
+SCRIPT_PATH = Path(__file__).resolve().parent
+
 
 def create_api_creds(output_dict):
 
-    url = output_dict["host_url"]["value"]
-    user = output_dict["user"]["value"]
-    passw = output_dict["pass"]["value"]
+    url = output_dict["looker_url"]
+    user = output_dict["looker_user"]
+    passw = output_dict["looker_pass"]
 
     # The user and pass entries need to be url encoded
     encoded_user = urllib.parse.quote(user)
@@ -63,12 +65,12 @@ def create_api_creds(output_dict):
     client_secret = row.find("lk-hidden-field")["content"].replace("'", "")
 
     # Now we render our ini template file with the api keys for future SDK use
-    with open("ini_template.ini") as f:
+    with open(SCRIPT_PATH.joinpath("ini_template.ini")) as f:
         ini_template = f.read()
 
     ini_parsed = Template(ini_template).render(url=url, client_id=client_id, client_secret=client_secret)
 
-    with open("looker.ini", "w") as f:
+    with open(SCRIPT_PATH.joinpath("looker.ini"), "w") as f:
         f.write(ini_parsed)
 
     return (client_id, client_secret)
@@ -80,14 +82,14 @@ def create_db_connection(con_file):
     with open(con_file, "rb") as f:
         db = pickle.load(f)
 
-    sdk = looker_sdk.init31()
+    sdk = looker_sdk.init31(config_file=SCRIPT_PATH.joinpath("looker.ini"))
     sdk.create_connection(db)
 
 
 def create_project(project_name):
 
     project = models.WriteProject(name=project_name)
-    sdk = looker_sdk.init31()
+    sdk = looker_sdk.init31(config_file=SCRIPT_PATH.joinpath("looker.ini"))
 
     # We need to enter dev mode to create a project
     sdk.update_session(models.WriteApiSession(workspace_id="dev"))
@@ -111,10 +113,10 @@ def upload_and_push(tar, connection, dest):
 
 def seed_project_files(repo, project_id, output_dict):
 
-    nfs_flag = output_dict["nfs_flag"]["value"]
-    key = output_dict["key"]["value"]
-    client = output_dict["node_public_dns"]["value"][0]
-    host_url = output_dict["host_url"]["value"]
+    nfs_flag = output_dict["nfs_flag"]
+    key = output_dict["key"]
+    client = output_dict["looker_nodes"][0]
+    host_url = output_dict["looker_url"]
 
     key_path = os.path.join(str(Path.home()), ".ssh", key)
     ckwargs = {"key_filename": key_path}
@@ -150,7 +152,7 @@ def seed_project_files(repo, project_id, output_dict):
 
 def create_model_entries(project_id):
 
-    sdk = looker_sdk.init31()
+    sdk = looker_sdk.init31(config_file=SCRIPT_PATH.joinpath("looker.ini"))
     files = sdk.all_project_files(project_id)
     lkml_models = [file.title.split(".")[0] for file in files if file.type == "model"]
 
@@ -160,7 +162,7 @@ def create_model_entries(project_id):
 
 
 def send_content(output_dict, client_id, client_secret, dashboard_json):
-    url = output_dict["host_url"]["value"].replace("https://", "")
+    url = output_dict["looker_url"].replace("https://", "")
     gzr_command = [
         "gzr",
         "dashboard",
@@ -181,21 +183,24 @@ def send_content(output_dict, client_id, client_secret, dashboard_json):
 
 @apply_backoff(strategies.Exponential, max_tries=8)
 def is_alive(output_dict):
-    url = output_dict["host_url"]["value"]
+    url = output_dict["looker_url"]
 
     requests.get(f"{url}/alive")
 
 
 def main():
     # parse the output json
-    with open("output.json") as f:
+    with open(SCRIPT_PATH.joinpath("..", "params.json")) as f:
         output_dict = json.load(f)
 
     # set the source repo
     source_repo = "https://github.com/JCPistell/partner_homepage_template.git"
 
     # set dashboard
-    dash = "Dashboard_1_Overview.json"
+    dash = SCRIPT_PATH.joinpath("Dashboard_1_Overview.json")
+
+    # set the connection
+    db = SCRIPT_PATH.joinpath("db.p")
 
     # wait for the instance to come up
     print("sleeping")
@@ -205,7 +210,7 @@ def main():
 
     # execute
     client_id, client_secret = create_api_creds(output_dict)
-    create_db_connection("db.p")
+    create_db_connection(db)
     project_id = create_project("thelook")
     seed_project_files(source_repo, project_id, output_dict)
     create_model_entries(project_id)

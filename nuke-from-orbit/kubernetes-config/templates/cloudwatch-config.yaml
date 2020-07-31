@@ -19,17 +19,17 @@ data:
         aws_metric_name: CPUUtilization
         aws_dimensions: [DBInstanceIdentifier]
         aws_dimension_select:
-          DBInstanceIdentifier: [{{db_identifier[0]}}]
+          DBInstanceIdentifier: [{{looker_db_identifier[0]}}]
         aws_statistics: [Sum]
       - aws_namespace: AWS/RDS
         aws_metric_name: ReadIOPS
         aws_dimensions: [DBInstanceIdentifier]
         aws_dimension_select:
-          DBInstanceIdentifier: [{{db_identifier[0]}}]
+          DBInstanceIdentifier: [{{looker_db_identifier[0]}}]
         aws_statistics: [Sum]
       - aws_namespace: AWS/RDS
         aws_metric_name: WriteIOPS
         aws_dimensions: [DBInstanceIdentifier]
         aws_dimension_select:
-          DBInstanceIdentifier: [{{db_identifier[0]}}]
+          DBInstanceIdentifier: [{{looker_db_identifier[0]}}]
         aws_statistics: [Sum]

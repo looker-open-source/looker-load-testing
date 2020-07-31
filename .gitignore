@@ -14,3 +14,6 @@ jcp-loadtest-sandbox-9b4258773b60.json
 variables.tf
 output.json
 nuke-from-orbit/kubernetes-config/*.yaml
+params.json
+*.p
+Dashboard_1_Overview.json

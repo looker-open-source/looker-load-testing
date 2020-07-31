@@ -43,7 +43,7 @@ spec:
     spec:
       containers:
         - name: lm-pod
-          image: gcr.io/{{project_id}}/locust-tasks:latest
+          image: gcr.io/{{gcp_project_id}}/locust-tasks:latest
           resources:
             requests:
               memory: "500Mi"
@@ -97,7 +97,7 @@ spec:
     spec:
       containers:
         - name: lw-prod
-          image: gcr.io/{{project_id}}/locust-tasks:latest
+          image: gcr.io/{{gcp_project_id}}/locust-tasks:latest
           resources:
             requests:
               memory: "2Gi"

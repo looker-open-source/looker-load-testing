@@ -23,7 +23,7 @@ resource "aws_route53_record" "gke-ingress-lb" {
   name = "*.${var.subdomain}.${var.domain}"
   type = "A"
   ttl = "300"
-  records = ["${data.terraform_remote_state.gke_cluster.outputs.cluster_lb_ip}"]
+  records = ["${data.terraform_remote_state.gke_cluster.outputs.loadtest_cluster_lb_ip}"]
 }
 
 output "loadtest_dns_domain" {
