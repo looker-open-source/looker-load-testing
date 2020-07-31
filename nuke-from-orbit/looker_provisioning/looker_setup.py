@@ -194,10 +194,10 @@ def main():
         output_dict = json.load(f)
 
     # set the source repo
-    source_repo = "https://github.com/JCPistell/partner_homepage_template.git"
+    source_repo = output_dict["lookml_project_repo"]
 
-    # set dashboard
-    dash = SCRIPT_PATH.joinpath("Dashboard_1_Overview.json")
+    # set dashboards
+    dashes = SCRIPT_PATH.joinpath("content").glob("*.json")
 
     # set the connection
     db = SCRIPT_PATH.joinpath("db.p")
@@ -214,7 +214,9 @@ def main():
     project_id = create_project("thelook")
     seed_project_files(source_repo, project_id, output_dict)
     create_model_entries(project_id)
-    send_content(output_dict, client_id, client_secret, dash)
+
+    for dash in dashes:
+        send_content(output_dict, client_id, client_secret, dash)
 
 
 if __name__ == "__main__":
