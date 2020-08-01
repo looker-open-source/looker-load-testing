@@ -102,7 +102,7 @@ set_variables() {
 }
 
 build_loadtest_image() {
-  gcloud builds submit --tag gcr.io/$gcp_project/locust-tasks:latest docker-image/.
+  gcloud builds submit --tag gcr.io/${gcp_project_id}/locust-tasks:latest docker-image/.
 }
 
 get_kubernetes_creds() {
@@ -163,17 +163,17 @@ setup() {
   parse_config
   set_variables
   provision_looker
-  # build_loadtest_image
-  # get_kubernetes_creds
-  # set_oauth_secret
-  # set_looker_secret
-  # set_aws_secret
-  # deploy_managed_certificate
-  # deploy_backend_config
-  # deploy_locust
-  # deploy_prometheus
-  # deploy_grafana
-  # deploy_ingress
+  build_loadtest_image
+  get_kubernetes_creds
+  set_oauth_secret
+  set_looker_secret
+  set_aws_secret
+  deploy_managed_certificate
+  deploy_backend_config
+  deploy_locust
+  deploy_prometheus
+  deploy_grafana
+  deploy_ingress
 }
 
 

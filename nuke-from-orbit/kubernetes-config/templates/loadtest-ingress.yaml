@@ -4,7 +4,7 @@ kind: Ingress
 metadata:
   name: loadtest-ingress
   annotations:
-    kubernetes.io/ingress.global-static-ip-name: loadtest-address
+    kubernetes.io/ingress.global-static-ip-name: {{loadtest_cluster_lb_name}}
     networking.gke.io/managed-certificates: loadtest-cert
 spec:
   rules:

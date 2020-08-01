@@ -9,7 +9,8 @@ import shutil
 import os
 import subprocess
 import time
-from backoff_utils import apply_backoff, strategies
+from backoff_utils import backoff, strategies
+from requests.exceptions import ConnectionError
 from fabric import Connection
 from git import Repo
 from bs4 import BeautifulSoup
@@ -181,11 +182,15 @@ def send_content(output_dict, client_id, client_secret, dashboard_json):
     subprocess.run(gzr_command)
 
 
-@apply_backoff(strategies.Exponential, max_tries=8)
 def is_alive(output_dict):
+    print("Checking Looker state...")
     url = output_dict["looker_url"]
 
-    requests.get(f"{url}/alive")
+    r = requests.get(f"{url}/alive")
+    assert r.status_code == 200
+
+    print("It's alive!")
+    return r.status_code
 
 
 def main():
@@ -206,7 +211,14 @@ def main():
     print("sleeping")
     time.sleep(30)
     print("done sleeping...")
-    is_alive(output_dict)
+
+    backoff(
+        is_alive,
+        args=[output_dict],
+        max_tries=8,
+        catch_exceptions=[type(AssertionError()), type(ConnectionError())],
+        strategy=strategies.Exponential
+    )
 
     # execute
     client_id, client_secret = create_api_creds(output_dict)

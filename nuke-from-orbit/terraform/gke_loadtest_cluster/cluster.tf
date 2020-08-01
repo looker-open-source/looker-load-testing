@@ -47,6 +47,10 @@ output "loadtest_cluster_lb_ip" {
   value = google_compute_address.loadtest_lb.address
 }
 
+output "loadtest_cluster_lb_name" {
+  value = google_compute_address.loadtest_lb.name
+}
+
 output "gcp_project_id" {
   value = var.project
 }
