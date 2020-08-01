@@ -7,7 +7,7 @@ from locust import TaskSet, task, between
 
 
 SITE = "https://jcp-dev.lookersandbox.com"
-DASH_ID = 8
+DASH_ID = 1
 
 
 class LocustUserBehavior(TaskSet):

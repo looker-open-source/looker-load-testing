@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Stop on error
+set -e
+
 # Check to make sure required programs are installed
 
 if ! [ -x "$(command -v terraform)" ]; then
@@ -37,6 +40,7 @@ script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 param_file=${script_dir}/params.json
 config_dir=${script_dir}/kubernetes-config
 
+# Define functions
 gke_cluster_deploy() {
   cd ${script_dir}/terraform/gke_loadtest_cluster
   terraform init
@@ -80,11 +84,15 @@ looker_destroy() {
 }
 
 parse_config() {
+  echo "Parsing kubernetes config templates"
   python ${script_dir}/kubernetes-config/parse_kube_templates.py
+  echo "Parse complete"
 }
 
 provision_looker() {
+  echo "Provisioning Looker instance"
   python ${script_dir}/looker-provisioning/looker_setup.py
+  echo "Provisioning attempt complete."
 }
 
 set_variables() {
@@ -142,6 +150,11 @@ deploy_locust() {
   kubectl apply -f ${config_dir}/locust-controller.yaml
 }
 
+deploy_cloudwatch() {
+  kubectl apply -f ${config_dir}/cloudwatch-config.yaml
+  kubectl apply -f ${config_dir}/cloudwatch-controller.yaml
+}
+
 deploy_prometheus() {
   kubectl apply -f ${config_dir}/prometheus-config.yaml
   kubectl apply -f ${config_dir}/prometheus-controller.yaml
@@ -156,13 +169,13 @@ deploy_ingress() {
   kubectl apply -f ${config_dir}/loadtest-ingress.yaml
 }
 
+# Define aggregate functions
 setup() {
   gke_cluster_deploy
   loadtest_dns_deploy
   looker_deploy
   parse_config
   set_variables
-  provision_looker
   build_loadtest_image
   get_kubernetes_creds
   set_oauth_secret
@@ -171,9 +184,11 @@ setup() {
   deploy_managed_certificate
   deploy_backend_config
   deploy_locust
+  deploy_cloudwatch
   deploy_prometheus
   deploy_grafana
   deploy_ingress
+  provision_looker
 }
 
 
@@ -183,6 +198,7 @@ teardown() {
   gke_cluster_destroy
 }
 
+# Parse command input
 case "$1" in
   setup)
     setup
