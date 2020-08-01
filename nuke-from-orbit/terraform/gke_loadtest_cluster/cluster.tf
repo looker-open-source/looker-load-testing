@@ -26,7 +26,7 @@ resource "google_container_cluster" "gke_load_test" {
 
 }
 
-resource "google_compute_address" "loadtest_lb" {
+resource "google_compute_global_address" "loadtest_lb" {
   name = "loadtest-lb-address"
 }
 
@@ -44,11 +44,11 @@ output "loadtest_cluster_instance_ips" {
 }
 
 output "loadtest_cluster_lb_ip" {
-  value = google_compute_address.loadtest_lb.address
+  value = google_compute_global_address.loadtest_lb.address
 }
 
 output "loadtest_cluster_lb_name" {
-  value = google_compute_address.loadtest_lb.name
+  value = google_compute_global_address.loadtest_lb.name
 }
 
 output "gcp_project_id" {
