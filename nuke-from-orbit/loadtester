@@ -38,7 +38,7 @@ param_file=${script_dir}/params.json
 config_dir=${script_dir}/kubernetes-config
 
 gke_cluster_deploy() {
-  cd ${script_dir}/terraform/gke_cluster_deploy
+  cd ${script_dir}/terraform/gke_loadtest_cluster
   terraform init
   terraform apply -auto-approve
   terraform output -json > output.json
@@ -62,7 +62,7 @@ looker_deploy() {
 }
 
 gke_cluster_destroy() {
-  cd ${script_dir}/terraform/gke_cluster_deploy
+  cd ${script_dir}/terraform/gke_loadtest_cluster
   terraform destroy -auto-approve
   cd $script_dir
 }
@@ -84,7 +84,7 @@ parse_config() {
 }
 
 provision_looker() {
-  python ${script_dir}/looker_setup.py
+  python ${script_dir}/looker-provisioning/looker_setup.py
 }
 
 set_variables() {
@@ -163,17 +163,17 @@ setup() {
   parse_config
   set_variables
   provision_looker
-  build_loadtest_image
-  get_kubernetes_creds
-  set_oauth_secret
-  set_looker_secret
-  set_aws_secret
-  deploy_managed_certificate
-  deploy_backend_config
-  deploy_locust
-  deploy_prometheus
-  deploy_grafana
-  deploy_ingress
+  # build_loadtest_image
+  # get_kubernetes_creds
+  # set_oauth_secret
+  # set_looker_secret
+  # set_aws_secret
+  # deploy_managed_certificate
+  # deploy_backend_config
+  # deploy_locust
+  # deploy_prometheus
+  # deploy_grafana
+  # deploy_ingress
 }
 
 
@@ -190,8 +190,8 @@ case "$1" in
   teardown)
     teardown
   ;;
-  ?)
-    echo 'Please specify either `setup` or `teardown`'
+  *)
+    echo $"Usage: $0 {setup|teardown}"
     exit 1
   ;;
 esac
