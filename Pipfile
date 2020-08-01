@@ -19,7 +19,6 @@ gitpython = "*"
 fabric = "*"
 backoff-utils = "*"
 kubernetes = "*"
-python-terraform = "*"
 looker-deployer = "*"
 
 [requires]
