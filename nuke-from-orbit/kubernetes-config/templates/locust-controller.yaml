@@ -57,7 +57,7 @@ spec:
             - name: TARGET_HOST
               value: dashboard
             - name: LOCUST_STEP
-              value: "false"
+              value: "true"
             - name: USERNAME
               valueFrom:
                 secretKeyRef:
@@ -113,7 +113,7 @@ spec:
             - name: TARGET_HOST
               value: dashboard
             - name: LOCUST_STEP
-              value: "false"
+              value: "true"
             - name: USERNAME
               valueFrom:
                 secretKeyRef:

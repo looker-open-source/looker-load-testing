@@ -8,6 +8,7 @@ SCRIPT_PATH = Path(__file__).resolve().parent
 
 def combine_tf_outputs():
 
+    print("Combining outputs")
     files = SCRIPT_PATH.joinpath("..", "terraform").glob("**/output.json")
     output_dict = {}
     for file in files:
@@ -20,6 +21,8 @@ def combine_tf_outputs():
 
 
 def add_other_creds(values_dict):
+
+    print("Adding user creds")
     aws_path = Path(Path.home().joinpath(".aws", "credentials"))
     assert aws_path.exists(), "Couldn't find AWS credentials file! Make sure it exists"
 
@@ -52,8 +55,9 @@ def add_other_creds(values_dict):
 
 
 def render_kubernetes_templates(values_dict):
-    files = Path("templates").glob("*.yaml")
+    files = SCRIPT_PATH.joinpath("templates").glob("*.yaml")
     for file in files:
+        print(f"Rendering {file}")
         dest_file = SCRIPT_PATH.joinpath(file.name)
         template = file.read_text()
         rendered = Template(template).render(**values_dict)
