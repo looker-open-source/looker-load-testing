@@ -210,9 +210,9 @@ def main():
     db = SCRIPT_PATH.joinpath("db.p")
 
     # wait for the instance to come up
-    print("sleeping")
-    time.sleep(30)
-    print("done sleeping...")
+    print("sleeping for 60 seconds...")
+    time.sleep(60)
+    print("...done sleeping...")
 
     backoff(
         is_alive,
