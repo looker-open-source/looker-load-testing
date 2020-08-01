@@ -185,8 +185,10 @@ def send_content(output_dict, client_id, client_secret, dashboard_json):
 def is_alive(output_dict):
     print("Checking Looker state...")
     url = output_dict["looker_url"]
+    alive_url = f"{url}/alive"
+    print(f"URL is {alive_url}")
 
-    r = requests.get(f"{url}/alive")
+    r = requests.get(alive_url)
     assert r.status_code == 200
 
     print("It's alive!")
@@ -215,7 +217,8 @@ def main():
     backoff(
         is_alive,
         args=[output_dict],
-        max_tries=8,
+        max_tries=12,
+        max_delay=300,
         catch_exceptions=[type(AssertionError()), type(ConnectionError())],
         strategy=strategies.Exponential
     )
