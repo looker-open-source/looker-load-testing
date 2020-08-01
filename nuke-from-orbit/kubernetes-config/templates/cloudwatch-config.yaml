@@ -13,7 +13,7 @@ data:
         aws_metric_name: RequestCount
         aws_dimensions: [AvailabilityZone, LoadBalancerName]
         aws_dimension_select:
-          LoadBalancerName: [{{elb_name}}]
+          LoadBalancerName: [{{looker_lb_name}}]
         aws_statistics: [Sum]
       - aws_namespace: AWS/RDS
         aws_metric_name: CPUUtilization
