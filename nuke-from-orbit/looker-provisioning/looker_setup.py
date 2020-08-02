@@ -103,12 +103,29 @@ def create_project(project_name):
 
 
 def upload_and_push(tar, connection, dest):
+    time.sleep(1)
+    print("Copying content to remote")
     connection.put(tar, "/home/ubuntu")
     connection.run("tar zxvf lookml.tgz")
+
+    time.sleep(1)
+    print("Initializing git repo")
     connection.run("cd lookml && git init")
+
+    time.sleep(1)
+    print(f"Adding origin {dest}")
     connection.run(f"cd lookml && git remote add origin {dest}")
+
+    time.sleep(1)
+    print("Committing")
     connection.run("cd lookml && git add --all && git commit -m 'lookml files'")
+
+    time.sleep(1)
+    print("Rebasing")
     connection.run("cd lookml && git fetch && git rebase origin/master")
+
+    time.sleep(1)
+    print("Pushing")
     connection.run("cd lookml && sudo git push origin master")
 
 
@@ -202,6 +219,7 @@ def main():
 
     # set the source repo
     source_repo = output_dict["lookml_project_repo"]
+    print(f"Using {source_repo} as source repository")
 
     # set dashboards
     dashes = SCRIPT_PATH.joinpath("content").glob("*.json")
@@ -224,12 +242,20 @@ def main():
     )
 
     # execute
+    print("Creating API credentials")
     client_id, client_secret = create_api_creds(output_dict)
+    print("Creating db connection")
     create_db_connection(db)
+    print("Creating project")
     project_id = create_project("thelook")
+    time.sleep(5)
+    print("Seeding project files")
     seed_project_files(source_repo, project_id, output_dict)
+    time.sleep(5)
+    print("Creating model entry")
     create_model_entries(project_id)
 
+    print("Deploying content")
     for dash in dashes:
         send_content(output_dict, client_id, client_secret, dash)
 
