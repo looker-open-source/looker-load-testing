@@ -102,6 +102,7 @@ set_variables() {
   gcp_oauth_client_secret=$(cat $param_file | jq -r '.gcp_oauth_client_secret')
   gcp_zone=$(cat $param_file | jq -r '.gcp_zone')
   gcp_project_id=$(cat $param_file | jq -r '.gcp_project_id')
+  gcp_iap_email=$(cat $param_file | jq -r '.gcp_iap_email')
   looker_user=$(cat $param_file | jq -r '.looker_user')
   looker_pass=$(cat $param_file | jq -r '.looker_pass')
   aws_access_key=$(cat $param_file | jq -r '.aws_access_key')
@@ -169,6 +170,19 @@ deploy_ingress() {
   kubectl apply -f ${config_dir}/loadtest-ingress.yaml
 }
 
+set_iap_bindings() {
+  for backend in $(gcloud compute backend-services list --format="value(name)")
+  do
+    echo "backend service: ${backend}"
+    gcloud iap web add-iam-policy-binding \
+      --member $gcp_iap_email \
+      --role roles/iap.httpsResourceAccessor \
+      --service $backend  \
+      --resource-type backend-services
+  done
+}
+
+
 # Define aggregate functions
 setup() {
   gke_cluster_deploy
@@ -189,6 +203,7 @@ setup() {
   deploy_grafana
   deploy_ingress
   provision_looker
+  set_iap_bindings
 }
 
 
