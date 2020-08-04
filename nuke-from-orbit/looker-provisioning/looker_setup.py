@@ -11,6 +11,7 @@ import subprocess
 import time
 from backoff_utils import backoff, strategies
 from requests.exceptions import ConnectionError
+from looker_sdk.error import SDKError
 from fabric import Connection
 from git import Repo
 from bs4 import BeautifulSoup
@@ -170,6 +171,7 @@ def seed_project_files(repo, project_id, output_dict):
 
 def create_model_entries(project_id):
 
+    print("Creating model entry")
     sdk = looker_sdk.init31(config_file=SCRIPT_PATH.joinpath("looker.ini"))
     files = sdk.all_project_files(project_id)
     lkml_models = [file.title.split(".")[0] for file in files if file.type == "model"]
@@ -177,6 +179,8 @@ def create_model_entries(project_id):
     for l in lkml_models:
         new_model = models.WriteLookmlModel(name=l, project_name=project_id, unlimited_db_connections=True)
         sdk.create_lookml_model(new_model)
+
+    print("Done creating model entries")
 
 
 def send_content(output_dict, client_id, client_secret, dashboard_json):
@@ -252,8 +256,14 @@ def main():
     print("Seeding project files")
     seed_project_files(source_repo, project_id, output_dict)
     time.sleep(5)
-    print("Creating model entry")
-    create_model_entries(project_id)
+    backoff(
+        create_model_entries,
+        args=[project_id],
+        max_tries=6,
+        max_delay=30,
+        catch_exceptions=[type(SDKError())],
+        strategy=strategies.Exponential
+    )
 
     print("Deploying content")
     for dash in dashes:

@@ -43,7 +43,7 @@ sudo chown looker:looker /home/looker/looker
 cd /home/looker/looker
 
 # Download and install Looker
-sudo curl -s -i -X POST -H 'Content-Type:application/json' -d "{\"lic\": \"$LOOKER_LICENSE_KEY\", \"email\": \"$LOOKER_TECHNICAL_CONTACT_EMAIL\", \"latest\":\"latest\"}" https://apidownload.looker.com/download -o /home/looker/looker/response.txt
+sudo curl -s -i -X POST -H 'Content-Type:application/json' -d "{\"lic\": \"$LOOKER_LICENSE_KEY\", \"email\": \"$LOOKER_TECHNICAL_CONTACT_EMAIL\", \"latest\":\"specific\", \"specific\":\"$LOOKER_VERSION\"}" https://apidownload.looker.com/download -o /home/looker/looker/response.txt
 sudo sed -i 1,9d response.txt
 sudo chmod 777 response.txt
 eula=$(cat response.txt | jq -r '.eulaMessage')

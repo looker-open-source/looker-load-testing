@@ -368,6 +368,7 @@ resource "aws_instance" "looker-instance" {
       "export LOOKER_LICENSE_KEY=${var.looker_license_key}",
       "export LOOKER_TECHNICAL_CONTACT_EMAIL=${var.technical_contact_email}",
       "export LOOKER_PASSWORD=abc_${random_string.password.result}",
+      "export LOOKER_VERSION=looker-${var.looker_version}.jar",
       "export HOST_URL=${self.public_dns}",
 
       "export EXTERNAL_DB=no",
@@ -427,6 +428,7 @@ resource "aws_instance" "looker-instance-mysql" {
       "export LOOKER_LICENSE_KEY=${var.looker_license_key}",
       "export LOOKER_TECHNICAL_CONTACT_EMAIL=${var.technical_contact_email}",
       "export LOOKER_PASSWORD=abc_${random_string.password.result}",
+      "export LOOKER_VERSION=looker-${var.looker_version}.jar",
       "export HOST_URL=${self.public_dns}",
 
       "export EXTERNAL_DB=yes",
@@ -489,6 +491,7 @@ resource "aws_instance" "looker-instance-cluster" {
       "export LOOKER_LICENSE_KEY=${var.looker_license_key}",
       "export LOOKER_TECHNICAL_CONTACT_EMAIL=${var.technical_contact_email}",
       "export LOOKER_PASSWORD=abc_${random_string.password.result}",
+      "export LOOKER_VERSION=looker-${var.looker_version}.jar",
       "export HOST_URL=${self.public_dns}",
 
       "export EXTERNAL_DB=yes",
