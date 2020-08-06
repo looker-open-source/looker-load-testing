@@ -17,3 +17,4 @@ nuke-from-orbit/kubernetes-config/*.yaml
 *params.json
 *.p
 Dashboard_*.json
+nuke-from-orbit/looker-provisioning/connections/*.json

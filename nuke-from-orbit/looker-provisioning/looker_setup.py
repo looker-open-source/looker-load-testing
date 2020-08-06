@@ -1,5 +1,4 @@
 import looker_sdk
-import pickle
 import requests
 import json
 import urllib.parse
@@ -80,12 +79,14 @@ def create_api_creds(output_dict):
 
 def create_db_connection(con_file):
 
-    # The saved connection must be a pre-pickled WriteDBConnection object
-    with open(con_file, "rb") as f:
-        db = pickle.load(f)
+    with open(con_file) as f:
+        db = json.load(f)
 
     sdk = looker_sdk.init31(config_file=SCRIPT_PATH.joinpath("looker.ini"))
-    sdk.create_connection(db)
+
+    write_conn = models.WriteDBConnection()
+    write_conn.__dict__.update(db)
+    sdk.create_connection(write_conn)
 
 
 def create_project(project_name):
@@ -229,7 +230,7 @@ def main():
     dashes = SCRIPT_PATH.joinpath("content").glob("*.json")
 
     # set the connection
-    db = SCRIPT_PATH.joinpath("db.p")
+    dbs = SCRIPT_PATH.joinpath("connections").glob("*.json")
 
     # wait for the instance to come up
     print("sleeping for 60 seconds...")
@@ -248,10 +249,14 @@ def main():
     # execute
     print("Creating API credentials")
     client_id, client_secret = create_api_creds(output_dict)
+
     print("Creating db connection")
-    create_db_connection(db)
+    for db in dbs:
+        create_db_connection(db)
+
     print("Creating project")
     project_id = create_project("thelook")
+
     time.sleep(5)
     print("Seeding project files")
     seed_project_files(source_repo, project_id, output_dict)
