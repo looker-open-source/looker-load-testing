@@ -4,43 +4,51 @@
 set -e
 
 # Check to make sure required programs are installed
+universal_requirements_check() {
+  if ! [ -x "$(command -v gcloud)" ]; then
+    echo 'Error: gcloud is not installed. Please refer to https://cloud.google.com/sdk/install for instructions.' >&2
+    exit 1
+  fi
 
-if ! [ -x "$(command -v terraform)" ]; then
-  echo 'Error: terraform is not installed. Please refer to https://learn.hashicorp.com/terraform/getting-started/install.html for instructions.' >&2
-  exit 1
-fi
+  if ! [ -x "$(command -v kubectl)" ]; then
+    echo 'Error: kubectl is not installed. Please run `gcloud components install kubectl` and try again.' >&2
+    exit 1
+  fi
 
-if ! [ -x "$(command -v gcloud)" ]; then
-  echo 'Error: gcloud is not installed. Please refer to https://cloud.google.com/sdk/install for instructions.' >&2
-  exit 1
-fi
+  if ! [ -x "$(command -v pipenv)" ]; then
+    echo 'Error: pipenv is not installed. Please refer to https://github.com/pypa/pipenv for instructions.' >&2
+    exit 1
+  fi
 
-if ! [ -x "$(command -v kubectl)" ]; then
-  echo 'Error: kubectl is not installed. Please run `gcloud components install kubectl` and try again.' >&2
-  exit 1
-fi
 
-if ! [ -x "$(command -v pipenv)" ]; then
-  echo 'Error: pipenv is not installed. Please refer to https://github.com/pypa/pipenv for instructions.' >&2
-  exit 1
-fi
+  if [ -z "$PIPENV_ACTIVE" ]; then
+    echo 'Looks like your pipenv environment has not been activated. Please return to project root and run `pipenv shell` before proceeding. If you have not yet initialized your pipenv environment you will need to run `pipenv install --python 3.7 --ignore-pipfile` from the project root.' >&2
+    exit 1
+  fi
+}
 
-if ! [ -x "$(command -v gzr)" ]; then
-  echo 'Error: gazer is not installed. Please ensure ruby is installed and run `gem install gazer`.' >&2
-  exit 1
-fi
+self_contained_requirements_check() {
+  if ! [ -x "$(command -v terraform)" ]; then
+    echo 'Error: terraform is not installed. Please refer to https://learn.hashicorp.com/terraform/getting-started/install.html for instructions.' >&2
+    exit 1
+  fi
 
-if [ -z "$PIPENV_ACTIVE" ]; then
-  echo 'Looks like your pipenv environment has not been activated. Please return to project root and run `pipenv shell` before proceeding. If you have not yet initialized your pipenv environment you will need to run `pipenv install --python 3.7 --ignore-pipfile` from the project root.' >&2
-  exit 1
-fi
+  if ! [ -x "$(command -v gzr)" ]; then
+    echo 'Error: gazer is not installed. Please ensure ruby is installed and run `gem install gazer`.' >&2
+    exit 1
+  fi
+}
 
 # Set convenience variables
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 param_file=${script_dir}/params.json
+user_param_file=${script_dir}/user_params.json
 config_dir=${script_dir}/kubernetes-config
 
+
 # Define functions
+
+## Terraform functions
 gke_cluster_deploy() {
   cd ${script_dir}/terraform/gke_loadtest_cluster
   terraform init
@@ -83,6 +91,23 @@ looker_destroy() {
   cd $script_dir
 }
 
+## gcloud-only build functions
+gke_loadtest_cluster_gcloud() {
+  gcloud container clusters create $loadtest_name \
+   --project $gcp_project_id \
+   --zone $gcp_zone \
+   --scopes "https://www.googleapis.com/auth/cloud-platform" \
+   --num-nodes "$gcp_cluster_node_count" \
+   --machine-type $gcp_cluster_machine_type \
+   --cluster-version "1.16.9-gke.6"
+}
+
+gke_loadtest_cluster_ip_gcloud() {
+  gcloud compute addresses create ${loadtest_name} --global
+  loadtest_ip_address=$(gcloud compute addresses describe loadtest-address --global --format json | jq -r '.address')
+}
+
+
 parse_config() {
   echo "Parsing kubernetes config templates"
   python ${script_dir}/kubernetes-config/parse_kube_templates.py
@@ -95,9 +120,9 @@ provision_looker() {
   echo "Provisioning attempt complete."
 }
 
-set_variables() {
-  gcp_project=$(cat $param_file | jq -r '.gcp_project_id')
-  loadtest_cluster_name=$(cat $param_file | jq -r '.loadtest_cluster_name')
+set_self_contained_variables() {
+  gcp_project_id=$(cat $param_file | jq -r '.gcp_project_id')
+  loadtest_name=$(cat $param_file | jq -r '.loadtest_name')
   gcp_oauth_client_id=$(cat $param_file | jq -r '.gcp_oauth_client_id')
   gcp_oauth_client_secret=$(cat $param_file | jq -r '.gcp_oauth_client_secret')
   gcp_zone=$(cat $param_file | jq -r '.gcp_zone')
@@ -110,12 +135,44 @@ set_variables() {
   aws_session_token=$(cat $param_file | jq -r '.aws_session_token')
 }
 
+set_external_variables() {
+  gcp_project_id=$(cat $user_param_file | jq -r '.gcp_project_id')
+  if [ -z $gcp_project_id ]; then echo "Could not find gcp_project_id"; exit 1; fi
+
+  loadtest_name=$(cat $user_param_file | jq -r '.loadtest_name')
+  if [ -z $loadtest_name ]; then echo "Could not find loadtest_name"; exit 1; fi
+
+  gcp_oauth_client_id=$(cat $user_param_file | jq -r '.gcp_oauth_client_id')
+  if [ -z $gcp_oauth_client_id ]; then echo "Could not find gcp_oauth_client_id"; exit 1; fi
+
+  gcp_oauth_client_secret=$(cat $user_param_file | jq -r '.gcp_oauth_client_secret')
+  if [ -z $gcp_oauth_client_secret ]; then echo "Could not find gcp_oauth_client_secret"; exit 1; fi
+
+  gcp_zone=$(cat $user_param_file | jq -r '.gcp_zone')
+  if [ -z $gcp_zone ]; then echo "Could not find gcp_zone"; exit 1; fi
+
+  gcp_iap_email=$(cat $user_param_file | jq -r '.gcp_iap_email')
+  if [ -z $gcp_iap_email ]; then echo "Could not find gcp_iap_email"; exit 1; fi
+
+  gcp_cluster_node_count=$(cat $user_param_file | jq -r '.gcp_cluster_node_count')
+  if [ -z $gcp_cluster_node_count ]; then echo "Could not find gcp_cluster_node_count"; exit 1; fi
+
+  gcp_cluster_machine_type=$(cat $user_param_file | jq -r '.gcp_cluster_machine_type')
+  if [ -z $gcp_cluster_machine_type ]; then echo "Could not find gcp_cluster_machine_type"; exit 1; fi
+
+  looker_user=$(cat $param_file | jq -r '.looker_user')
+  if [ -z $looker_user ]; then echo "Could not find looker_user"; exit 1; fi
+
+  looker_pass=$(cat $param_file | jq -r '.looker_pass')
+  if [ -z $looker_pass ]; then echo "Could not find looker_pass"; exit 1; fi
+}
+
 build_loadtest_image() {
-  gcloud builds submit --tag gcr.io/${gcp_project_id}/locust-tasks:latest docker-image/.
+  gcloud builds submit --tag gcr.io/${gcp_project_id}/{$loadtest_name}:${image_tag} docker-image/.
 }
 
 get_kubernetes_creds() {
-  gcloud container clusters get-credentials $loadtest_cluster_name \
+  gcloud container clusters get-credentials $loadtest_name \
     --zone $gcp_zone \
     --project $gcp_project_id
 }
@@ -169,7 +226,6 @@ deploy_grafana() {
 deploy_ingress() {
   kubectl apply -f ${config_dir}/loadtest-ingress.yaml
 }
-
 set_iap_bindings() {
   for backend in $(gcloud compute backend-services list --format="value(name)")
   do
@@ -183,27 +239,51 @@ set_iap_bindings() {
 }
 
 
+parse_setup_options() {
+  case "$setup_command" in
+    --self-contained)
+      universal_requirements_check
+      self_contained_requirements_check
+      self_contained_setup
+    ;;
+    --external)
+      universal_requirements_check
+      external_setup
+    ;;
+    *)
+      echo "Usage: $0 setup {--self-contained|--external}"
+    ;;
+  esac
+}
+
 # Define aggregate functions
-setup() {
-  gke_cluster_deploy
-  loadtest_dns_deploy
-  looker_deploy
-  parse_config
-  set_variables
-  build_loadtest_image
-  get_kubernetes_creds
-  set_oauth_secret
-  set_looker_secret
-  set_aws_secret
-  deploy_managed_certificate
-  deploy_backend_config
-  deploy_locust
-  deploy_cloudwatch
-  deploy_prometheus
-  deploy_grafana
-  deploy_ingress
-  provision_looker
-  set_iap_bindings
+self_contained_setup() {
+  echo "Self contained setup triggered"
+  # gke_cluster_deploy
+  # loadtest_dns_deploy
+  # looker_deploy
+  # parse_config
+  # set_self_contained_variables
+  # build_loadtest_image
+  # get_kubernetes_creds
+  # set_oauth_secret
+  # set_looker_secret
+  # set_aws_secret
+  # deploy_managed_certificate
+  # deploy_backend_config
+  # deploy_locust
+  # deploy_cloudwatch
+  # deploy_prometheus
+  # deploy_grafana
+  # deploy_ingress
+  # provision_looker
+  # set_iap_bindings
+}
+
+external_setup() {
+  echo "External setup triggered"
+  
+  echo "Cluster IP address is ${loadtest_ip_address}. Please set an appropriate record in your DNS provider"
 }
 
 
@@ -216,7 +296,8 @@ teardown() {
 # Parse command input
 case "$1" in
   setup)
-    setup
+    setup_command=$2
+    parse_setup_options
   ;;
   teardown)
     teardown

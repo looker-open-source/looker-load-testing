@@ -63,6 +63,6 @@ output "gcp_zone" {
   value = var.zone
 }
 
-output "loadtest_cluster_name" {
+output "loadtest_name" {
   value = google_container_cluster.gke_load_test.name
 }

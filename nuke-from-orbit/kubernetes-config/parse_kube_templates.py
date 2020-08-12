@@ -1,6 +1,7 @@
 from jinja2 import Template
 import json
 import configparser
+import argparse
 from pathlib import Path
 
 SCRIPT_PATH = Path(__file__).resolve().parent
@@ -20,7 +21,7 @@ def combine_tf_outputs():
     return flattened
 
 
-def add_other_creds(values_dict):
+def add_aws_creds(values_dict):
 
     print("Adding user creds")
     aws_path = Path(Path.home().joinpath(".aws", "credentials"))
@@ -42,16 +43,24 @@ def add_other_creds(values_dict):
 
     combined = {**values_dict, **aws_dict}
 
+    return combined
+
+
+def add_user_params(values_dict):
     user_config = SCRIPT_PATH.joinpath("..", "user_params.json")
     if user_config.exists():
         with open(user_config) as f:
             user_dict = json.load(f)
 
-        combined = {**combined, **user_dict}
+        combined = {**values_dict, **user_dict}
 
+        return combined
+
+
+def export_params(values_dict):
     # export file for future use
     with open(SCRIPT_PATH.joinpath("..", "params.json"), "w") as f:
-        json.dump(combined, f)
+        json.dump(values_dict, f)
 
 
 def render_kubernetes_templates(values_dict):
@@ -67,9 +76,21 @@ def render_kubernetes_templates(values_dict):
 
 
 def main():
-    values_dict = combine_tf_outputs()
-    add_other_creds(values_dict)
-    render_kubernetes_templates(values_dict)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--only-user-params", action="store_true", help="Only parse user args")
+    parser.add_argument("--image-tag", default="v1", help="Tag to use for locust test image")
+    args = parser.parse_args()
+
+    if args.only_user_params:
+        values_dict = {}
+        user_dict = add_user_params(values_dict)
+        render_kubernetes_templates(user_dict)
+    else:
+        values_dict = combine_tf_outputs()
+        aws_dict = add_aws_creds(values_dict)
+        combined_dict = add_user_params(aws_dict)
+        export_params(combined_dict)
+        render_kubernetes_templates(combined_dict)
 
 
 if __name__ == "__main__":
