@@ -11,8 +11,8 @@ resource "google_container_cluster" "gke_load_test" {
   location = var.zone
   initial_node_count = var.node_count
 
-  node_version = "1.16.9-gke.6"
-  min_master_version = "1.16.9-gke.6"
+  node_version = "1.16.11-gke.5"
+  min_master_version = "1.16.11-gke.5"
 
   node_config {
     machine_type = var.machine_type
