@@ -15,6 +15,7 @@ variables.tf
 output.json
 nuke-from-orbit/kubernetes-config/*.yaml
 *params.json
+config.json
 *.p
 Dashboard_*.json
 nuke-from-orbit/looker-provisioning/connections/*.json
@@ -23,4 +24,3 @@ nuke-from-orbit/docker-image/looker-jmx-prom-server/
 nuke-from-orbit/docker-image/monitoring/
 nuke-from-orbit/docker-image/prom/
 nuke-from-orbit/docker-image/README.md
-

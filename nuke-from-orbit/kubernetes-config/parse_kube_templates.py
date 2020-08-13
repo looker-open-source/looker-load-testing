@@ -47,7 +47,7 @@ def add_aws_creds(values_dict):
 
 
 def add_user_params(values_dict):
-    user_config = SCRIPT_PATH.joinpath("..", "user_params.json")
+    user_config = SCRIPT_PATH.joinpath("..", "config.json")
     if user_config.exists():
         with open(user_config) as f:
             user_dict = json.load(f)
@@ -59,12 +59,11 @@ def add_user_params(values_dict):
 
 def export_params(values_dict):
     # export file for future use
-    with open(SCRIPT_PATH.joinpath("..", "params.json"), "w") as f:
+    with open(SCRIPT_PATH.joinpath("..", ".self_contained_params.json"), "w") as f:
         json.dump(values_dict, f)
 
 
-def render_kubernetes_templates(values_dict):
-    files = SCRIPT_PATH.joinpath("templates").glob("*.yaml")
+def render_kubernetes_templates(values_dict, files):
     for file in files:
         print(f"Rendering {file}")
         dest_file = SCRIPT_PATH.joinpath(file.name)
@@ -77,20 +76,29 @@ def render_kubernetes_templates(values_dict):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--only-user-params", action="store_true", help="Only parse user args")
-    parser.add_argument("--image-tag", default="v1", help="Tag to use for locust test image")
+    parser.add_argument("--only-user-config", action="store_true", help="Only parse user config")
+    parser.add_argument("--image-tag", default="latest", help="Tag to use for locust test image")
     args = parser.parse_args()
 
-    if args.only_user_params:
+    if args.only_user_config:
+        files = [
+            SCRIPT_PATH.joinpath("templates", "loadtest-cert.yaml"),
+            SCRIPT_PATH.joinpath("templates", "loadtest-ingress.yaml"),
+            SCRIPT_PATH.joinpath("templates", "locust-controller.yaml")
+        ]
         values_dict = {}
         user_dict = add_user_params(values_dict)
-        render_kubernetes_templates(user_dict)
+        user_dict["image_tag"] = args.image_tag
+        print(user_dict)
+        render_kubernetes_templates(user_dict, files)
     else:
+        files = SCRIPT_PATH.joinpath("templates").glob("*.yaml")
         values_dict = combine_tf_outputs()
         aws_dict = add_aws_creds(values_dict)
         combined_dict = add_user_params(aws_dict)
+        combined_dict["image_tag"] = args.image_tag
         export_params(combined_dict)
-        render_kubernetes_templates(combined_dict)
+        render_kubernetes_templates(combined_dict, files)
 
 
 if __name__ == "__main__":

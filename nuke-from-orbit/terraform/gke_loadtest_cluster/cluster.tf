@@ -7,7 +7,7 @@ provider "google" {
 }
 
 resource "google_container_cluster" "gke_load_test" {
-  name = "gke-load-test"
+  name = var.loadtest_name
   location = var.zone
   initial_node_count = var.node_count
 
@@ -64,5 +64,5 @@ output "gcp_zone" {
 }
 
 output "loadtest_name" {
-  value = google_container_cluster.gke_load_test.name
+  value = var.loadtest_name
 }

@@ -3,6 +3,10 @@
 # Stop on error
 set -e
 
+# Set convenience variables
+script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+config_dir=${script_dir}/kubernetes-config
+
 # Check to make sure required programs are installed
 universal_requirements_check() {
   if ! [ -x "$(command -v gcloud)" ]; then
@@ -39,16 +43,7 @@ self_contained_requirements_check() {
   fi
 }
 
-# Set convenience variables
-script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-param_file=${script_dir}/params.json
-user_param_file=${script_dir}/user_params.json
-config_dir=${script_dir}/kubernetes-config
-
-
-# Define functions
-
-## Terraform functions
+# Terraform functions
 gke_cluster_deploy() {
   cd ${script_dir}/terraform/gke_loadtest_cluster
   terraform init
@@ -91,7 +86,7 @@ looker_destroy() {
   cd $script_dir
 }
 
-## gcloud-only build functions
+# gcloud-only build functions
 gke_loadtest_cluster_gcloud() {
   gcloud container clusters create $loadtest_name \
    --project $gcp_project_id \
@@ -99,7 +94,7 @@ gke_loadtest_cluster_gcloud() {
    --scopes "https://www.googleapis.com/auth/cloud-platform" \
    --num-nodes "$gcp_cluster_node_count" \
    --machine-type $gcp_cluster_machine_type \
-   --cluster-version "1.16.9-gke.6"
+   --cluster-version "1.16.11-gke.5"
 }
 
 gke_loadtest_cluster_ip_gcloud() {
@@ -107,88 +102,105 @@ gke_loadtest_cluster_ip_gcloud() {
   loadtest_ip_address=$(gcloud compute addresses describe loadtest-address --global --format json | jq -r '.address')
 }
 
-
+# Parse kubernetes jinja templates into proper config files
 parse_config() {
   echo "Parsing kubernetes config templates"
-  python ${script_dir}/kubernetes-config/parse_kube_templates.py
+  if [ -z $setup_command ]
+  then
+    python ${script_dir}/kubernetes-config/parse_kube_templates.py --only-user-config --image-tag $image_tag
+  else
+    python ${script_dir}/kubernetes-config/parse_kube_templates.py --image-tag $image_tag
+  fi
   echo "Parse complete"
 }
 
+# Self-contained only: Provision Looker instance
 provision_looker() {
   echo "Provisioning Looker instance"
   python ${script_dir}/looker-provisioning/looker_setup.py
   echo "Provisioning attempt complete."
 }
 
-set_self_contained_variables() {
-  gcp_project_id=$(cat $param_file | jq -r '.gcp_project_id')
-  loadtest_name=$(cat $param_file | jq -r '.loadtest_name')
-  gcp_oauth_client_id=$(cat $param_file | jq -r '.gcp_oauth_client_id')
-  gcp_oauth_client_secret=$(cat $param_file | jq -r '.gcp_oauth_client_secret')
-  gcp_zone=$(cat $param_file | jq -r '.gcp_zone')
-  gcp_project_id=$(cat $param_file | jq -r '.gcp_project_id')
-  gcp_iap_email=$(cat $param_file | jq -r '.gcp_iap_email')
-  looker_user=$(cat $param_file | jq -r '.looker_user')
-  looker_pass=$(cat $param_file | jq -r '.looker_pass')
-  aws_access_key=$(cat $param_file | jq -r '.aws_access_key')
-  aws_secret_key=$(cat $param_file | jq -r '.aws_secret_access_key')
-  aws_session_token=$(cat $param_file | jq -r '.aws_session_token')
-}
-
-set_external_variables() {
-  gcp_project_id=$(cat $user_param_file | jq -r '.gcp_project_id')
+# Parse relevant config file to set needed variables
+set_variables() {
+  gcp_project_id=$(cat $config_file | jq -r '.gcp_project_id // empty')
   if [ -z $gcp_project_id ]; then echo "Could not find gcp_project_id"; exit 1; fi
 
-  loadtest_name=$(cat $user_param_file | jq -r '.loadtest_name')
+  loadtest_name=$(cat $config_file | jq -r '.loadtest_name // empty')
   if [ -z $loadtest_name ]; then echo "Could not find loadtest_name"; exit 1; fi
 
-  gcp_oauth_client_id=$(cat $user_param_file | jq -r '.gcp_oauth_client_id')
+  loadtest_dns_domain=$(cat $config_file | jq -r '.loadtest_dns_domain // empty')
+  if [ -z $loadtest_dns_domain ]; then echo "Could not find loadtest_dns_domain"; exit 1; fi
+
+  gcp_oauth_client_id=$(cat $config_file | jq -r '.gcp_oauth_client_id // empty')
   if [ -z $gcp_oauth_client_id ]; then echo "Could not find gcp_oauth_client_id"; exit 1; fi
 
-  gcp_oauth_client_secret=$(cat $user_param_file | jq -r '.gcp_oauth_client_secret')
+  gcp_oauth_client_secret=$(cat $config_file | jq -r '.gcp_oauth_client_secret // empty')
   if [ -z $gcp_oauth_client_secret ]; then echo "Could not find gcp_oauth_client_secret"; exit 1; fi
 
-  gcp_zone=$(cat $user_param_file | jq -r '.gcp_zone')
+  gcp_zone=$(cat $config_file | jq -r '.gcp_zone // empty')
   if [ -z $gcp_zone ]; then echo "Could not find gcp_zone"; exit 1; fi
 
-  gcp_iap_email=$(cat $user_param_file | jq -r '.gcp_iap_email')
+  gcp_iap_email=$(cat $config_file | jq -r '.gcp_iap_email // empty')
   if [ -z $gcp_iap_email ]; then echo "Could not find gcp_iap_email"; exit 1; fi
 
-  gcp_cluster_node_count=$(cat $user_param_file | jq -r '.gcp_cluster_node_count')
+  gcp_cluster_node_count=$(cat $config_file | jq -r '.gcp_cluster_node_count // empty')
   if [ -z $gcp_cluster_node_count ]; then echo "Could not find gcp_cluster_node_count"; exit 1; fi
 
-  gcp_cluster_machine_type=$(cat $user_param_file | jq -r '.gcp_cluster_machine_type')
+  gcp_cluster_machine_type=$(cat $config_file | jq -r '.gcp_cluster_machine_type // empty')
   if [ -z $gcp_cluster_machine_type ]; then echo "Could not find gcp_cluster_machine_type"; exit 1; fi
 
-  looker_user=$(cat $param_file | jq -r '.looker_user')
+  looker_user=$(cat $config_file | jq -r '.looker_user // empty')
   if [ -z $looker_user ]; then echo "Could not find looker_user"; exit 1; fi
 
-  looker_pass=$(cat $param_file | jq -r '.looker_pass')
+  looker_pass=$(cat $config_file | jq -r '.looker_pass // empty')
   if [ -z $looker_pass ]; then echo "Could not find looker_pass"; exit 1; fi
+
+  # if we're going for self contained we need a few more variables set
+  if ! [ -z $setup_command ]
+  then
+    echo "Parsing extra args"
+    aws_access_key=$(cat $config_file | jq -r '.aws_access_key // empty')
+    if [ -z $aws_access_key ]; then echo "Could not find aws_access_key"; exit 1; fi
+
+    aws_secret_key=$(cat $config_file | jq -r '.aws_secret_access_key // empty')
+    if [ -z $aws_secret_key ]; then echo "Could not find aws_secret_key"; exit 1; fi
+
+    aws_session_token=$(cat $config_file | jq -r '.aws_session_token // empty')
+    if [ -z $aws_session_token ]; then echo "Could not find aws_session_token"; exit 1; fi
+
+    lookml_project_repo=$(cat $config_file | jq -r '.lookml_project_repo // empty')
+    if [ -z $lookml_project_repo ]; then echo "Could not find lookml_project_repo"; exit 1; fi
+  fi
 }
 
+# Build (or rebuild) the load test image
 build_loadtest_image() {
   gcloud builds submit --tag gcr.io/${gcp_project_id}/{$loadtest_name}:${image_tag} docker-image/.
 }
 
+# Configure access to kubernetes cluster via gcloud
 get_kubernetes_creds() {
   gcloud container clusters get-credentials $loadtest_name \
     --zone $gcp_zone \
     --project $gcp_project_id
 }
 
+# Set the oauth secret (used by iap)
 set_oauth_secret() {
   kubectl create secret generic iap-secret \
     --from-literal=client_id=$gcp_oauth_client_id \
     --from-literal=client_secret=$gcp_oauth_client_secret
 }
 
+# Set the Looker username and password secret
 set_looker_secret() {
   kubectl create secret generic website-creds \
     --from-literal=username=$looker_user \
     --from-literal=password=$looker_pass
 }
 
+# Self-contained only: Set AWS credentials for monitoring
 set_aws_secret() {
   kubectl create secret generic aws-creds \
     --from-literal=aws-access-key=$aws_access_key \
@@ -196,36 +208,45 @@ set_aws_secret() {
     --from-literal=aws-session-token=$aws_session_token
 }
 
+# Deploy GCP managed SSL certificate
 deploy_managed_certificate() {
   kubectl apply -f ${config_dir}/loadtest-cert.yaml
 }
 
+# Backend config for establishing IAP authority over kubernetes resources
 deploy_backend_config() {
   kubectl apply -f ${config_dir}/config-default.yaml
 }
 
+# Deploy the locust stack
 deploy_locust() {
   kubectl apply -f ${config_dir}/locust-controller.yaml
 }
 
+# Self-contained only: deploy cloudwatch monitoring stack
 deploy_cloudwatch() {
   kubectl apply -f ${config_dir}/cloudwatch-config.yaml
   kubectl apply -f ${config_dir}/cloudwatch-controller.yaml
 }
 
+# Deploy prometheus
 deploy_prometheus() {
   kubectl apply -f ${config_dir}/prometheus-config.yaml
   kubectl apply -f ${config_dir}/prometheus-controller.yaml
 }
 
+# Deploy grafana
 deploy_grafana() {
   kubectl apply -f ${config_dir}/grafana-config.yaml
   kubectl apply -f ${config_dir}/grafana-controller.yaml
 }
 
+# Deploy ingress controller
 deploy_ingress() {
   kubectl apply -f ${config_dir}/loadtest-ingress.yaml
 }
+
+# Set up IAP
 set_iap_bindings() {
   for backend in $(gcloud compute backend-services list --format="value(name)")
   do
@@ -239,21 +260,29 @@ set_iap_bindings() {
 }
 
 
+# Parse input parameters
+
+## If setup is selected parse the additional options
 parse_setup_options() {
-  case "$setup_command" in
-    --self-contained)
-      universal_requirements_check
-      self_contained_requirements_check
-      self_contained_setup
-    ;;
-    --external)
-      universal_requirements_check
-      external_setup
-    ;;
-    *)
-      echo "Usage: $0 setup {--self-contained|--external}"
-    ;;
-  esac
+  echo $setup_command
+  if ! [ -z $setup_command ]
+  then
+    case "$setup_command" in
+      self-contained)
+        config_file=${script_dir}/.self_contained_params.json
+        universal_requirements_check
+        self_contained_requirements_check
+        self_contained_setup
+      ;;
+      *)
+        echo "Usage: $0 setup {--self-contained}"
+      ;;
+    esac
+  else
+    config_file=${script_dir}/config.json
+    universal_requirements_check
+    external_setup
+  fi
 }
 
 # Define aggregate functions
@@ -263,7 +292,7 @@ self_contained_setup() {
   # loadtest_dns_deploy
   # looker_deploy
   # parse_config
-  # set_self_contained_variables
+  # set_variables
   # build_loadtest_image
   # get_kubernetes_creds
   # set_oauth_secret
@@ -280,10 +309,20 @@ self_contained_setup() {
   # set_iap_bindings
 }
 
+
 external_setup() {
   echo "External setup triggered"
-  
-  echo "Cluster IP address is ${loadtest_ip_address}. Please set an appropriate record in your DNS provider"
+  set_variables
+  # gke_loadtest_cluster_gcloud
+  # gke_loadtest_cluster_ip_gcloud
+  parse_config
+  # build_loadtest_image
+  # get_kubernetes_creds
+  # set_oauth_secret
+  # deploy_managed_certificate
+  # deploy_backend_config
+  # deploy_locust
+  echo "Cluster IP address is ${loadtest_ip_address}. Please set it as an A Record in your DNS provider for *.${loadtest_dns_domain}."
 }
 
 
@@ -296,6 +335,7 @@ teardown() {
 # Parse command input
 case "$1" in
   setup)
+    image_tag='v1'
     setup_command=$2
     parse_setup_options
   ;;
