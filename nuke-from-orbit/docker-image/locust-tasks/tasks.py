@@ -27,9 +27,9 @@ class LocustUserBehavior(TaskSet):
         pw = self.client.find_element_by_id("login-password")
         box = self.client.find_element_by_class_name("checkbox")
         username.clear()
-        username.send_keys(user_entry)
+        username.send_keys(user_entry.strip())
         pw.clear()
-        pw.send_keys(pass_entry)
+        pw.send_keys(pass_entry.strip())
         box.click()
         self.client.find_element_by_id("login-submit").click()
 
