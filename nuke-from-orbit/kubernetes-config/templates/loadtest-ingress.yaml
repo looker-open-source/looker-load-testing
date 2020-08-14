@@ -15,6 +15,15 @@ spec:
             backend:
               serviceName: lm-pod
               servicePort: 80
+    {% if external -%}
+    - host: locust-metrics.{{loadtest_dns_domain}}
+      http:
+        paths:
+          - path: /*
+            backend:
+              serviceName: le-pod
+              servicePort: 80
+    {% else -%}
     - host: prometheus.{{loadtest_dns_domain}}
       http:
         paths:
@@ -29,3 +38,4 @@ spec:
             backend:
               serviceName: grafana
               servicePort: 80
+    {% endif %}

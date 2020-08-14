@@ -6,5 +6,9 @@ metadata:
 spec:
   domains:
     - locust.{{loadtest_dns_domain}}
+    {% if external -%}
+    - locust-metrics.{{loadtest_dns_domain}}
+    {% else -%}
     - prometheus.{{loadtest_dns_domain}}
     - grafana.{{loadtest_dns_domain}}
+    {% endif %}

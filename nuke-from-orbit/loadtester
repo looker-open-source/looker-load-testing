@@ -104,6 +104,8 @@ gke_loadtest_cluster_ip_gcloud() {
 
 # Parse kubernetes jinja templates into proper config files
 parse_config() {
+  echo "Cleaning out any old configs"
+  rm ${script_dir}/kubernetes-config/*.yaml
   echo "Parsing kubernetes config templates"
   if [ -z $setup_command ]
   then
@@ -111,7 +113,6 @@ parse_config() {
   else
     python ${script_dir}/kubernetes-config/parse_kube_templates.py --image-tag $image_tag
   fi
-  echo "Parse complete"
 }
 
 # Self-contained only: Provision Looker instance
@@ -155,8 +156,10 @@ set_variables() {
 
   looker_pass=$(cat $config_file | jq -r '.looker_pass // empty')
   if [ -z $looker_pass ]; then echo "Could not find looker_pass"; exit 1; fi
+}
 
-  # if we're going for self contained we need a few more variables set
+# if we're going for self contained we need a few more variables set
+set_self_contained_variables() {
   if ! [ -z $setup_command ]
   then
     echo "Parsing extra args"
@@ -291,8 +294,9 @@ self_contained_setup() {
   # gke_cluster_deploy
   # loadtest_dns_deploy
   # looker_deploy
-  # parse_config
-  # set_variables
+  parse_config
+  set_variables
+  set_self_contained_variables
   # build_loadtest_image
   # get_kubernetes_creds
   # set_oauth_secret

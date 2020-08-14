@@ -89,7 +89,7 @@ def main():
         values_dict = {}
         user_dict = add_user_params(values_dict)
         user_dict["image_tag"] = args.image_tag
-        print(user_dict)
+        user_dict["external"] = True
         render_kubernetes_templates(user_dict, files)
     else:
         files = SCRIPT_PATH.joinpath("templates").glob("*.yaml")

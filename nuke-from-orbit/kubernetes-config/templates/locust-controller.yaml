@@ -133,7 +133,7 @@ metadata:
     app: le-pod
 spec:
   ports:
-    - port: 9646
+    - port: 80
       targetPort: lexp-web
       protocol: TCP
   selector:

@@ -219,7 +219,7 @@ def is_alive(output_dict):
 
 def main():
     # parse the output json
-    with open(SCRIPT_PATH.joinpath("..", "params.json")) as f:
+    with open(SCRIPT_PATH.joinpath("..", ".self_contained_params.json")) as f:
         output_dict = json.load(f)
 
     # set the source repo

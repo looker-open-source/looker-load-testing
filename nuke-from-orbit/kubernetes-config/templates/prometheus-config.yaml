@@ -14,7 +14,7 @@ data:
       - job_name: 'locust'
         scrape_interval: 2s
         static_configs:
-          - targets: ['le-pod:9646']
+          - targets: ['le-pod:80']
       - job_name: 'looker'
         scrape_interval: 2s
         static_configs:
