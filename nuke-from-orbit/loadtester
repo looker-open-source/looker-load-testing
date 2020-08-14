@@ -99,7 +99,7 @@ gke_loadtest_cluster_gcloud() {
 
 gke_loadtest_cluster_ip_gcloud() {
   gcloud compute addresses create ${loadtest_name} --global
-  loadtest_ip_address=$(gcloud compute addresses describe loadtest-address --global --format json | jq -r '.address')
+  loadtest_ip_address=$(gcloud compute addresses describe  $loadtest_name --global --format json | jq -r '.address')
 }
 
 # Parse kubernetes jinja templates into proper config files
@@ -179,7 +179,7 @@ set_self_contained_variables() {
 
 # Build (or rebuild) the load test image
 build_loadtest_image() {
-  gcloud builds submit --tag gcr.io/${gcp_project_id}/{$loadtest_name}:${image_tag} docker-image/.
+  gcloud builds submit --tag gcr.io/${gcp_project_id}/${loadtest_name}:${image_tag} docker-image/.
 }
 
 # Configure access to kubernetes cluster via gcloud
@@ -317,15 +317,17 @@ self_contained_setup() {
 external_setup() {
   echo "External setup triggered"
   set_variables
-  # gke_loadtest_cluster_gcloud
-  # gke_loadtest_cluster_ip_gcloud
+  gke_loadtest_cluster_gcloud
+  gke_loadtest_cluster_ip_gcloud
   parse_config
-  # build_loadtest_image
-  # get_kubernetes_creds
-  # set_oauth_secret
-  # deploy_managed_certificate
-  # deploy_backend_config
-  # deploy_locust
+  build_loadtest_image
+  get_kubernetes_creds
+  set_oauth_secret
+  set_looker_secret
+  deploy_managed_certificate
+  deploy_backend_config
+  deploy_locust
+  deploy_ingress
   echo "Cluster IP address is ${loadtest_ip_address}. Please set it as an A Record in your DNS provider for *.${loadtest_dns_domain}."
 }
 

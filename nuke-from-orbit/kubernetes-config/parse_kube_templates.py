@@ -84,7 +84,8 @@ def main():
         files = [
             SCRIPT_PATH.joinpath("templates", "loadtest-cert.yaml"),
             SCRIPT_PATH.joinpath("templates", "loadtest-ingress.yaml"),
-            SCRIPT_PATH.joinpath("templates", "locust-controller.yaml")
+            SCRIPT_PATH.joinpath("templates", "locust-controller.yaml"),
+            SCRIPT_PATH.joinpath("templates", "config-default.yaml")
         ]
         values_dict = {}
         user_dict = add_user_params(values_dict)
