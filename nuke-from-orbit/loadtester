@@ -158,7 +158,6 @@ set_variables() {
     if [ -z $loadtest_name ]; then echo "Could not find loadtest_name"; exit 1; fi
     if [ -z $loadtest_dns_domain ]; then echo "Could not find loadtest_dns_domain"; exit 1; fi
     if [ -z $gcp_zone ]; then echo "Could not find gcp_zone"; exit 1; fi
-    if [ -z $gcp_iap_email ]; then echo "Could not find gcp_iap_email"; exit 1; fi
     if [ -z $gcp_cluster_node_count ]; then echo "Could not find gcp_cluster_node_count"; exit 1; fi
     if [ -z $gcp_cluster_machine_type ]; then echo "Could not find gcp_cluster_machine_type"; exit 1; fi
     if [ -z $looker_user ]; then echo "Could not find looker_user"; exit 1; fi
@@ -168,6 +167,7 @@ set_variables() {
     if [ -z $aws_secret_key ]; then echo "Could not find aws_secret_key"; exit 1; fi
     if [ -z $aws_session_token ]; then echo "Could not find aws_session_token. It may not be required, but be aware."; fi
     if [ -z $lookml_project_repo ]; then echo "Could not find lookml_project_repo"; exit 1; fi
+    if [ -z $gcp_iap_email ]; then echo "Could not find gcp_iap_email"; exit 1; fi
   fi
 
 }
