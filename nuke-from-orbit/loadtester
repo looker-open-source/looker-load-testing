@@ -102,6 +102,14 @@ gke_loadtest_cluster_ip_gcloud() {
   loadtest_ip_address=$(gcloud compute addresses describe  $loadtest_name --global --format json | jq -r '.address')
 }
 
+gke_loadtest_cluster_destroy_gcloud() {
+  gcloud container clusters delete $loadtest_name --zone $gcp_zone --quiet
+}
+
+gke_loadtest_cluster_ip_destroy_gcloud() {
+  gcloud compute addresses delete $loadtest_name --global --quiet
+}
+
 # Parse kubernetes jinja templates into proper config files
 parse_config() {
   echo "Cleaning out any old configs"
@@ -125,56 +133,43 @@ provision_looker() {
 # Parse relevant config file to set needed variables
 set_variables() {
   gcp_project_id=$(cat $config_file | jq -r '.gcp_project_id // empty')
-  if [ -z $gcp_project_id ]; then echo "Could not find gcp_project_id"; exit 1; fi
-
   loadtest_name=$(cat $config_file | jq -r '.loadtest_name // empty')
-  if [ -z $loadtest_name ]; then echo "Could not find loadtest_name"; exit 1; fi
-
   loadtest_dns_domain=$(cat $config_file | jq -r '.loadtest_dns_domain // empty')
-  if [ -z $loadtest_dns_domain ]; then echo "Could not find loadtest_dns_domain"; exit 1; fi
-
   gcp_oauth_client_id=$(cat $config_file | jq -r '.gcp_oauth_client_id // empty')
-  if [ -z $gcp_oauth_client_id ]; then echo "Could not find gcp_oauth_client_id"; exit 1; fi
-
   gcp_oauth_client_secret=$(cat $config_file | jq -r '.gcp_oauth_client_secret // empty')
-  if [ -z $gcp_oauth_client_secret ]; then echo "Could not find gcp_oauth_client_secret"; exit 1; fi
-
   gcp_zone=$(cat $config_file | jq -r '.gcp_zone // empty')
-  if [ -z $gcp_zone ]; then echo "Could not find gcp_zone"; exit 1; fi
-
   gcp_iap_email=$(cat $config_file | jq -r '.gcp_iap_email // empty')
+  gcp_cluster_node_count=$(cat $config_file | jq -r '.gcp_cluster_node_count // empty')
+  gcp_cluster_machine_type=$(cat $config_file | jq -r '.gcp_cluster_machine_type // empty')
+  looker_user=$(cat $config_file | jq -r '.looker_user // empty')
+  looker_pass=$(cat $config_file | jq -r '.looker_pass // empty')
+  aws_access_key=$(cat $config_file | jq -r '.aws_access_key // empty')
+  aws_secret_key=$(cat $config_file | jq -r '.aws_secret_access_key // empty')
+  aws_session_token=$(cat $config_file | jq -r '.aws_session_token // empty')
+  lookml_project_repo=$(cat $config_file | jq -r '.lookml_project_repo // empty')
+
+  if [ -z $gcp_oauth_client_id ]; then echo "Could not find gcp_oauth_client_id"; exit 1; fi
+  if [ -z $gcp_oauth_client_secret ]; then echo "Could not find gcp_oauth_client_secret"; exit 1; fi
   if [ -z $gcp_iap_email ]; then echo "Could not find gcp_iap_email"; exit 1; fi
 
-  gcp_cluster_node_count=$(cat $config_file | jq -r '.gcp_cluster_node_count // empty')
-  if [ -z $gcp_cluster_node_count ]; then echo "Could not find gcp_cluster_node_count"; exit 1; fi
-
-  gcp_cluster_machine_type=$(cat $config_file | jq -r '.gcp_cluster_machine_type // empty')
-  if [ -z $gcp_cluster_machine_type ]; then echo "Could not find gcp_cluster_machine_type"; exit 1; fi
-
-  looker_user=$(cat $config_file | jq -r '.looker_user // empty')
-  if [ -z $looker_user ]; then echo "Could not find looker_user"; exit 1; fi
-
-  looker_pass=$(cat $config_file | jq -r '.looker_pass // empty')
-  if [ -z $looker_pass ]; then echo "Could not find looker_pass"; exit 1; fi
-}
-
-# if we're going for self contained we need a few more variables set
-set_self_contained_variables() {
-  if ! [ -z $setup_command ]
+  if ! [ $setup_command == 'self-contained' ]
   then
-    echo "Parsing extra args"
-    aws_access_key=$(cat $config_file | jq -r '.aws_access_key // empty')
+    if [ -z $gcp_project_id ]; then echo "Could not find gcp_project_id"; exit 1; fi
+    if [ -z $loadtest_name ]; then echo "Could not find loadtest_name"; exit 1; fi
+    if [ -z $loadtest_dns_domain ]; then echo "Could not find loadtest_dns_domain"; exit 1; fi
+    if [ -z $gcp_zone ]; then echo "Could not find gcp_zone"; exit 1; fi
+    if [ -z $gcp_iap_email ]; then echo "Could not find gcp_iap_email"; exit 1; fi
+    if [ -z $gcp_cluster_node_count ]; then echo "Could not find gcp_cluster_node_count"; exit 1; fi
+    if [ -z $gcp_cluster_machine_type ]; then echo "Could not find gcp_cluster_machine_type"; exit 1; fi
+    if [ -z $looker_user ]; then echo "Could not find looker_user"; exit 1; fi
+    if [ -z $looker_pass ]; then echo "Could not find looker_pass"; exit 1; fi
+  else
     if [ -z $aws_access_key ]; then echo "Could not find aws_access_key"; exit 1; fi
-
-    aws_secret_key=$(cat $config_file | jq -r '.aws_secret_access_key // empty')
     if [ -z $aws_secret_key ]; then echo "Could not find aws_secret_key"; exit 1; fi
-
-    aws_session_token=$(cat $config_file | jq -r '.aws_session_token // empty')
-    if [ -z $aws_session_token ]; then echo "Could not find aws_session_token"; exit 1; fi
-
-    lookml_project_repo=$(cat $config_file | jq -r '.lookml_project_repo // empty')
+    if [ -z $aws_session_token ]; then echo "Could not find aws_session_token. It may not be required, but be aware."; fi
     if [ -z $lookml_project_repo ]; then echo "Could not find lookml_project_repo"; exit 1; fi
   fi
+
 }
 
 # Build (or rebuild) the load test image
@@ -272,16 +267,25 @@ parse_setup_options() {
   then
     case "$setup_command" in
       self-contained)
-        config_file=${script_dir}/.self_contained_params.json
-        universal_requirements_check
-        self_contained_requirements_check
-        self_contained_setup
+        echo "This is an advanced setup mode and likely not what you want. Are you sure you want to proceed? (yes/no)"
+        read confirm
+        if [ $confirm == 'yes' ]
+        then
+          echo -n "self-contained" > ${script_dir}/.deploy_type
+          config_file=${script_dir}/.self_contained_params.json
+          universal_requirements_check
+          self_contained_requirements_check
+          self_contained_setup
+        else
+          echo "Aborting..."
+        fi
       ;;
       *)
-        echo "Usage: $0 setup {--self-contained}"
+        echo "Usage: $0 setup {self-contained}"
       ;;
     esac
   else
+    echo -n "external" > ${script_dir}/.deploy_type
     config_file=${script_dir}/config.json
     universal_requirements_check
     external_setup
@@ -291,26 +295,25 @@ parse_setup_options() {
 # Define aggregate functions
 self_contained_setup() {
   echo "Self contained setup triggered"
-  # gke_cluster_deploy
-  # loadtest_dns_deploy
-  # looker_deploy
+  gke_cluster_deploy
+  loadtest_dns_deploy
+  looker_deploy
   parse_config
   set_variables
-  set_self_contained_variables
-  # build_loadtest_image
-  # get_kubernetes_creds
-  # set_oauth_secret
-  # set_looker_secret
-  # set_aws_secret
-  # deploy_managed_certificate
-  # deploy_backend_config
-  # deploy_locust
-  # deploy_cloudwatch
-  # deploy_prometheus
-  # deploy_grafana
-  # deploy_ingress
-  # provision_looker
-  # set_iap_bindings
+  build_loadtest_image
+  get_kubernetes_creds
+  set_oauth_secret
+  set_looker_secret
+  set_aws_secret
+  deploy_managed_certificate
+  deploy_backend_config
+  deploy_locust
+  deploy_cloudwatch
+  deploy_prometheus
+  deploy_grafana
+  deploy_ingress
+  provision_looker
+  set_iap_bindings
 }
 
 
@@ -333,9 +336,21 @@ external_setup() {
 
 
 teardown() {
-  looker_destroy
-  loadtest_dns_destroy
-  gke_cluster_destroy
+  deploy_type=$(cat ${script_dir}/.deploy_type)
+  echo $deploy_type
+  if [ $deploy_type == 'self-contained' ]
+  then
+    looker_destroy
+    loadtest_dns_destroy
+    gke_cluster_destroy
+  else
+    echo 'external teardown'
+    config_file=${script_dir}/config.json
+    set_variables
+    gke_loadtest_cluster_destroy_gcloud
+    gke_loadtest_cluster_ip_destroy_gcloud
+    echo "Please delete the A Record for *.${loadtest_dns_domain} from your DNS provider!"
+  fi
 }
 
 # Parse command input

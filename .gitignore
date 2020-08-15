@@ -24,3 +24,4 @@ nuke-from-orbit/docker-image/looker-jmx-prom-server/
 nuke-from-orbit/docker-image/monitoring/
 nuke-from-orbit/docker-image/prom/
 nuke-from-orbit/docker-image/README.md
+.deploy_type
