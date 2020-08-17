@@ -113,7 +113,7 @@ gke_loadtest_cluster_ip_destroy_gcloud() {
 # Parse kubernetes jinja templates into proper config files
 parse_config() {
   echo "Cleaning out any old configs"
-  rm ${script_dir}/kubernetes-config/*.yaml
+  rm -f ${script_dir}/kubernetes-config/*.yaml
   echo "Parsing kubernetes config templates"
   if [ -z $setup_command ]
   then
