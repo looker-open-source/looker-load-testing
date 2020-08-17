@@ -150,7 +150,6 @@ set_variables() {
 
   if [ -z $gcp_oauth_client_id ]; then echo "Could not find gcp_oauth_client_id"; exit 1; fi
   if [ -z $gcp_oauth_client_secret ]; then echo "Could not find gcp_oauth_client_secret"; exit 1; fi
-  if [ -z $gcp_iap_email ]; then echo "Could not find gcp_iap_email"; exit 1; fi
 
   if ! [ $setup_command == 'self-contained' ]
   then
