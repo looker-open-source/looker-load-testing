@@ -24,8 +24,8 @@ SCRIPT_PATH = Path(__file__).resolve().parent
 def create_api_creds(output_dict):
 
     url = output_dict["looker_url"]
-    user = output_dict["looker_user"]
-    passw = output_dict["looker_pass"]
+    user = output_dict["looker_user"].strip()
+    passw = output_dict["looker_pass"].strip()
 
     # The user and pass entries need to be url encoded
     encoded_user = urllib.parse.quote(user)
