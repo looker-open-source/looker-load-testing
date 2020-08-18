@@ -9,35 +9,40 @@ config_dir=${script_dir}/kubernetes-config
 
 # Check to make sure required programs are installed
 universal_requirements_check() {
-  if ! [ -x "$(command -v gcloud)" ]; then
+  if ! [[ -x "$(command -v gcloud)" ]]; then
     echo 'Error: gcloud is not installed. Please refer to https://cloud.google.com/sdk/install for instructions.' >&2
     exit 1
   fi
 
-  if ! [ -x "$(command -v kubectl)" ]; then
+  if ! [[ -x "$(command -v jq)" ]]; then
+    echo 'Error: jq is not installed. Please run  `sudo apt-get install jq` to install it and then try again.' >&2
+    exit 1
+  fi
+
+  if ! [[ -x "$(command -v kubectl)" ]]; then
     echo 'Error: kubectl is not installed. Please run `gcloud components install kubectl` and try again.' >&2
     exit 1
   fi
 
-  if ! [ -x "$(command -v pipenv)" ]; then
+  if ! [[ -x "$(command -v pipenv)" ]]; then
     echo 'Error: pipenv is not installed. Please refer to https://github.com/pypa/pipenv for instructions.' >&2
     exit 1
   fi
 
 
-  if [ -z "$PIPENV_ACTIVE" ]; then
+  if [[ -z "$PIPENV_ACTIVE" ]]; then
     echo 'Looks like your pipenv environment has not been activated. Please return to project root and run `pipenv shell` before proceeding. If you have not yet initialized your pipenv environment you will need to run `pipenv install --python 3.7 --ignore-pipfile` from the project root.' >&2
     exit 1
   fi
 }
 
 self_contained_requirements_check() {
-  if ! [ -x "$(command -v terraform)" ]; then
+  if ! [[ -x "$(command -v terraform)" ]]; then
     echo 'Error: terraform is not installed. Please refer to https://learn.hashicorp.com/terraform/getting-started/install.html for instructions.' >&2
     exit 1
   fi
 
-  if ! [ -x "$(command -v gzr)" ]; then
+  if ! [[ -x "$(command -v gzr)" ]]; then
     echo 'Error: gazer is not installed. Please ensure ruby is installed and run `gem install gazer`.' >&2
     exit 1
   fi
@@ -115,7 +120,7 @@ parse_config() {
   echo "Cleaning out any old configs"
   rm -f ${script_dir}/kubernetes-config/*.yaml
   echo "Parsing kubernetes config templates"
-  if [ -z $setup_command ]
+  if [[ -z $setup_command ]]
   then
     python ${script_dir}/kubernetes-config/parse_kube_templates.py --only-user-config --image-tag $image_tag
   else
@@ -148,25 +153,25 @@ set_variables() {
   aws_session_token=$(cat $config_file | jq -r '.aws_session_token // empty')
   lookml_project_repo=$(cat $config_file | jq -r '.lookml_project_repo // empty')
 
-  if [ -z $gcp_oauth_client_id ]; then echo "Could not find gcp_oauth_client_id"; exit 1; fi
-  if [ -z $gcp_oauth_client_secret ]; then echo "Could not find gcp_oauth_client_secret"; exit 1; fi
+  if [[ -z $gcp_oauth_client_id ]]; then echo "Could not find gcp_oauth_client_id"; exit 1; fi
+  if [[ -z $gcp_oauth_client_secret ]]; then echo "Could not find gcp_oauth_client_secret"; exit 1; fi
 
-  if ! [ $setup_command == 'self-contained' ]
+  if ! [[ $setup_command == 'self-contained' ]]
   then
-    if [ -z $gcp_project_id ]; then echo "Could not find gcp_project_id"; exit 1; fi
-    if [ -z $loadtest_name ]; then echo "Could not find loadtest_name"; exit 1; fi
-    if [ -z $loadtest_dns_domain ]; then echo "Could not find loadtest_dns_domain"; exit 1; fi
-    if [ -z $gcp_zone ]; then echo "Could not find gcp_zone"; exit 1; fi
-    if [ -z $gcp_cluster_node_count ]; then echo "Could not find gcp_cluster_node_count"; exit 1; fi
-    if [ -z $gcp_cluster_machine_type ]; then echo "Could not find gcp_cluster_machine_type"; exit 1; fi
-    if [ -z $looker_user ]; then echo "Could not find looker_user"; exit 1; fi
-    if [ -z $looker_pass ]; then echo "Could not find looker_pass"; exit 1; fi
+    if [[ -z $gcp_project_id ]]; then echo "Could not find gcp_project_id"; exit 1; fi
+    if [[ -z $loadtest_name ]]; then echo "Could not find loadtest_name"; exit 1; fi
+    if [[ -z $loadtest_dns_domain ]]; then echo "Could not find loadtest_dns_domain"; exit 1; fi
+    if [[ -z $gcp_zone ]]; then echo "Could not find gcp_zone"; exit 1; fi
+    if [[ -z $gcp_cluster_node_count ]]; then echo "Could not find gcp_cluster_node_count"; exit 1; fi
+    if [[ -z $gcp_cluster_machine_type ]]; then echo "Could not find gcp_cluster_machine_type"; exit 1; fi
+    if [[ -z $looker_user ]]; then echo "Could not find looker_user"; exit 1; fi
+    if [[ -z $looker_pass ]]; then echo "Could not find looker_pass"; exit 1; fi
   else
-    if [ -z $aws_access_key ]; then echo "Could not find aws_access_key"; exit 1; fi
-    if [ -z $aws_secret_key ]; then echo "Could not find aws_secret_key"; exit 1; fi
-    if [ -z $aws_session_token ]; then echo "Could not find aws_session_token. It may not be required, but be aware."; fi
-    if [ -z $lookml_project_repo ]; then echo "Could not find lookml_project_repo"; exit 1; fi
-    if [ -z $gcp_iap_email ]; then echo "Could not find gcp_iap_email"; exit 1; fi
+    if [[ -z $aws_access_key ]]; then echo "Could not find aws_access_key"; exit 1; fi
+    if [[ -z $aws_secret_key ]]; then echo "Could not find aws_secret_key"; exit 1; fi
+    if [[ -z $aws_session_token ]]; then echo "Could not find aws_session_token. It may not be required, but be aware."; fi
+    if [[ -z $lookml_project_repo ]]; then echo "Could not find lookml_project_repo"; exit 1; fi
+    if [[ -z $gcp_iap_email ]]; then echo "Could not find gcp_iap_email"; exit 1; fi
   fi
 
 }
@@ -262,13 +267,13 @@ set_iap_bindings() {
 ## If setup is selected parse the additional options
 parse_setup_options() {
   echo $setup_command
-  if ! [ -z $setup_command ]
+  if ! [[ -z $setup_command ]]
   then
     case "$setup_command" in
       self-contained)
         echo "This is an advanced setup mode and likely not what you want. Are you sure you want to proceed? (yes/no)"
         read confirm
-        if [ $confirm == 'yes' ]
+        if [[ $confirm == 'yes' ]]
         then
           echo -n "self-contained" > ${script_dir}/.deploy_type
           config_file=${script_dir}/.self_contained_params.json
@@ -337,7 +342,7 @@ external_setup() {
 teardown() {
   deploy_type=$(cat ${script_dir}/.deploy_type)
   echo $deploy_type
-  if [ $deploy_type == 'self-contained' ]
+  if [[ $deploy_type == 'self-contained' ]]
   then
     looker_destroy
     loadtest_dns_destroy
