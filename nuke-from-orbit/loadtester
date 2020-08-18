@@ -137,21 +137,21 @@ provision_looker() {
 
 # Parse relevant config file to set needed variables
 set_variables() {
-  gcp_project_id=$(cat $config_file | jq -r '.gcp_project_id // empty')
-  loadtest_name=$(cat $config_file | jq -r '.loadtest_name // empty')
-  loadtest_dns_domain=$(cat $config_file | jq -r '.loadtest_dns_domain // empty')
-  gcp_oauth_client_id=$(cat $config_file | jq -r '.gcp_oauth_client_id // empty')
-  gcp_oauth_client_secret=$(cat $config_file | jq -r '.gcp_oauth_client_secret // empty')
-  gcp_zone=$(cat $config_file | jq -r '.gcp_zone // empty')
-  gcp_iap_email=$(cat $config_file | jq -r '.gcp_iap_email // empty')
-  gcp_cluster_node_count=$(cat $config_file | jq -r '.gcp_cluster_node_count // empty')
-  gcp_cluster_machine_type=$(cat $config_file | jq -r '.gcp_cluster_machine_type // empty')
-  looker_user=$(cat $config_file | jq -r '.looker_user // empty')
-  looker_pass=$(cat $config_file | jq -r '.looker_pass // empty')
-  aws_access_key=$(cat $config_file | jq -r '.aws_access_key // empty')
-  aws_secret_key=$(cat $config_file | jq -r '.aws_secret_access_key // empty')
-  aws_session_token=$(cat $config_file | jq -r '.aws_session_token // empty')
-  lookml_project_repo=$(cat $config_file | jq -r '.lookml_project_repo // empty')
+  gcp_project_id=$(cat $config_file | jq -r '.gcp_project_id // empty' | tr -d '[:space:]')
+  loadtest_name=$(cat $config_file | jq -r '.loadtest_name // empty' | tr -d '[:space:]')
+  loadtest_dns_domain=$(cat $config_file | jq -r '.loadtest_dns_domain // empty' | tr -d '[:space:]')
+  gcp_oauth_client_id=$(cat $config_file | jq -r '.gcp_oauth_client_id // empty' | tr -d '[:space:]')
+  gcp_oauth_client_secret=$(cat $config_file | jq -r '.gcp_oauth_client_secret // empty' | tr -d '[:space:]')
+  gcp_zone=$(cat $config_file | jq -r '.gcp_zone // empty' | tr -d '[:space:]')
+  gcp_iap_email=$(cat $config_file | jq -r '.gcp_iap_email // empty' | tr -d '[:space:]')
+  gcp_cluster_node_count=$(cat $config_file | jq -r '.gcp_cluster_node_count // empty' | tr -d '[:space:]')
+  gcp_cluster_machine_type=$(cat $config_file | jq -r '.gcp_cluster_machine_type // empty' | tr -d '[:space:]')
+  looker_user=$(cat $config_file | jq -r '.looker_user // empty' | tr -d '[:space:]')
+  looker_pass=$(cat $config_file | jq -r '.looker_pass // empty' | tr -d '[:space:]')
+  aws_access_key=$(cat $config_file | jq -r '.aws_access_key // empty' | tr -d '[:space:]')
+  aws_secret_key=$(cat $config_file | jq -r '.aws_secret_access_key // empty' | tr -d '[:space:]')
+  aws_session_token=$(cat $config_file | jq -r '.aws_session_token // empty' | tr -d '[:space:]')
+  lookml_project_repo=$(cat $config_file | jq -r '.lookml_project_repo // empty' | tr -d '[:space:]')
 
   if [[ -z $gcp_oauth_client_id ]]; then echo "Could not find gcp_oauth_client_id"; exit 1; fi
   if [[ -z $gcp_oauth_client_secret ]]; then echo "Could not find gcp_oauth_client_secret"; exit 1; fi
