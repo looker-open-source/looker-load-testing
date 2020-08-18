@@ -1,3 +1,4 @@
+---
 kind: Service
 apiVersion: v1
 metadata:
@@ -42,7 +43,7 @@ spec:
     spec:
       containers:
         - name: lm-pod
-          image: gcr.io/[PROJECT_ID]/locust-tasks:latest
+          image: gcr.io/{{gcp_project_id}}/{{loadtest_name}}:{{image_tag}}
           resources:
             requests:
               memory: "500Mi"
@@ -56,7 +57,7 @@ spec:
             - name: TARGET_HOST
               value: dashboard
             - name: LOCUST_STEP
-              value: "false"
+              value: "true"
             - name: USERNAME
               valueFrom:
                 secretKeyRef:
@@ -96,7 +97,7 @@ spec:
     spec:
       containers:
         - name: lw-prod
-          image: gcr.io/[PROJECT_ID]/locust-tasks:latest
+          image: gcr.io/{{gcp_project_id}}/{{loadtest_name}}:{{image_tag}}
           resources:
             requests:
               memory: "2Gi"
@@ -112,7 +113,7 @@ spec:
             - name: TARGET_HOST
               value: dashboard
             - name: LOCUST_STEP
-              value: "false"
+              value: "true"
             - name: USERNAME
               valueFrom:
                 secretKeyRef:
@@ -132,12 +133,12 @@ metadata:
     app: le-pod
 spec:
   ports:
-    - port: 9646
+    - port: 80
       targetPort: lexp-web
       protocol: TCP
   selector:
     app: le-pod
-  type: ClusterIP
+  type: NodePort
 ---
 apiVersion: apps/v1
 kind: "Deployment"

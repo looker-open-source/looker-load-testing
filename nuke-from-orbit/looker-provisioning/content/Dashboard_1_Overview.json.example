@@ -1,0 +1,10 @@
+{
+  "id": 8,
+  "readonly": false,
+  "title": "Overview",
+  "user_id": 1,
+  "dashboard_elements": [
+    {"example": "stuff"}
+    {"goes": "here"}
+  ]
+}

@@ -1,0 +1,23 @@
+variable "project" {
+  default = "my-awesome-project"
+}
+
+variable "region" {
+  default = "us-central1"
+}
+
+variable "zone" {
+  default = "us-central1-c"
+}
+
+variable "machine_type" {
+  default = "c2-standard-8"
+}
+
+variable "node_count" {
+  default = 3
+}
+
+variable "gcp_creds" {
+  default = "../path-to-my-creds-file.json"
+}

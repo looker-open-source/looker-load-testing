@@ -1,0 +1,17 @@
+{
+  "name": "my-snowflake-instance",
+  "host": "company.snowflakecomputing.com",
+  "port": "443",
+  "username": "db_user",
+  "password": "abc123",
+  "database": "my_database",
+  "schema": "PUBLIC",
+  "max_connections": 30,
+  "ssl": true,
+  "tmp_db_name": "SCRATCH",
+  "jdbc_additional_params": "warehouse=DEMO_WH",
+  "pool_timeout": 120,
+  "dialect_name": "snowflake",
+  "user_attribute_fields": [],
+  "uses_oauth": false
+}
