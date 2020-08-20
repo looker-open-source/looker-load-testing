@@ -138,17 +138,17 @@ The Following services should be enabled in your project:
 
 Navigate to the nuke-from-orbit directory and create a json file called ‘config.json’. You’ll need to add entries for the following items:
 
-* loadtest_name: A unique identifier for your load test
-* loadtest_dns_domain: The DNS domain/subdomain name
-* gcp_project_id: The project ID of your GCP project
-* gcp_region: The GCP region
-* gcp_zone: The GCP zone
-* gcp_oauth_client_id: The OAuth Client ID you generated earlier
-* gcp_oauth_client_secret: The OAuth Client Secret you generated earlier
-* gcp_cluster_node_count: How many nodes should be included in the load test cluster
-* gcp_cluster_machine_type: What compute instance machine type should be used? (Almost certainly a C2 type instance)
-* looker_user: The username of the Looker instance you are testing
-* looker_pass: The password of the Looker instance you are testing
+* **loadtest_name**: A unique identifier for your load test
+* **loadtest_dns_domain**: The DNS domain/subdomain name
+* **gcp_project_id**: The project ID of your GCP project
+* **gcp_region**: The GCP region
+* **gcp_zone**: The GCP zone
+* **gcp_oauth_client_id**: The OAuth Client ID you generated earlier
+* **gcp_oauth_client_secret**: The OAuth Client Secret you generated earlier
+* **gcp_cluster_node_count**: How many nodes should be included in the load test cluster
+* **gcp_cluster_machine_type**: What compute instance machine type should be used? (Almost certainly a C2 type instance)
+* **looker_user**: The username of the Looker instance you are testing
+* **looker_pass**: The password of the Looker instance you are testing
 
 Your config may look something like this:
 
@@ -172,11 +172,11 @@ Your config may look something like this:
 
 ### Deploy!
 
-1. Navigate to the project root and activate your pipenv environment:
+Navigate to the project root and activate your pipenv environment:
 
     $ pipenv shell
 
-2. Navigate to the nuke-from-orbit directory and kick off the deployment!
+Navigate to the nuke-from-orbit directory and kick off the deployment!
 
     $ cd nuke-from-orbit
     $ ./loadtester setup
