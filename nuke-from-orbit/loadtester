@@ -144,6 +144,7 @@ set_variables() {
   gcp_project_id=$(cat $config_file | jq -r '.gcp_project_id // empty' | tr -d '[:space:]')
   loadtest_name=$(cat $config_file | jq -r '.loadtest_name // empty' | tr -d '[:space:]')
   loadtest_dns_domain=$(cat $config_file | jq -r '.loadtest_dns_domain // empty' | tr -d '[:space:]')
+  loadtest_step_load=$(cat $config_file | jq -r '.loadtest_step_load // empty' | tr -d '[:space:]')
   gcp_oauth_client_id=$(cat $config_file | jq -r '.gcp_oauth_client_id // empty' | tr -d '[:space:]')
   gcp_oauth_client_secret=$(cat $config_file | jq -r '.gcp_oauth_client_secret // empty' | tr -d '[:space:]')
   gcp_zone=$(cat $config_file | jq -r '.gcp_zone // empty' | tr -d '[:space:]')
@@ -152,6 +153,8 @@ set_variables() {
   gcp_cluster_machine_type=$(cat $config_file | jq -r '.gcp_cluster_machine_type // empty' | tr -d '[:space:]')
   looker_user=$(cat $config_file | jq -r '.looker_user // empty' | tr -d '[:space:]')
   looker_pass=$(cat $config_file | jq -r '.looker_pass // empty' | tr -d '[:space:]')
+  looker_api_client_id=$(cat $config_file | jq -r '.looker_api_client_id // empty' | tr -d '[:space:]')
+  looker_api_client_secret=$(cat $config_file | jq -r '.looker_api_client_secret // empty' | tr -d '[:space:]')
   aws_access_key=$(cat $config_file | jq -r '.aws_access_key // empty' | tr -d '[:space:]')
   aws_secret_key=$(cat $config_file | jq -r '.aws_secret_access_key // empty' | tr -d '[:space:]')
   aws_session_token=$(cat $config_file | jq -r '.aws_session_token // empty' | tr -d '[:space:]')
@@ -167,12 +170,15 @@ set_variables() {
   then
     if [[ -z $gcp_project_id ]]; then error+="gcp_project_id,"; fi
     if [[ -z $loadtest_name ]]; then error+="loadtest_name,"; fi
+    if [[ -z $loadtest_step_load ]]; then error+="loadtest_step_load,"; fi
     if [[ -z $loadtest_dns_domain ]]; then error+="loadtest_dns_domain,"; fi
     if [[ -z $gcp_zone ]]; then error+="gcp_zone,"; fi
     if [[ -z $gcp_cluster_node_count ]]; then error+="gcp_cluster_node_count,"; fi
     if [[ -z $gcp_cluster_machine_type ]]; then error+="gcp_cluster_machine_type,"; fi
     if [[ -z $looker_user ]]; then warning+="looker_user,"; fi
     if [[ -z $looker_pass ]]; then warning+="looker_pass,"; fi
+    if [[ -z $looker_api_client_id ]]; then warning+="looker_api_client_id,"; fi
+    if [[ -z $looker_api_client_secret ]]; then warning+="looker_api_client_secret,"; fi
   else
     if [[ -z $aws_access_key ]]; then error+="aws_access_key,"; fi
     if [[ -z $aws_secret_key ]]; then error+="aws_secret_key,"; fi
@@ -216,9 +222,22 @@ set_oauth_secret() {
 
 # Set the Looker username and password secret
 set_looker_secret() {
-  kubectl create secret generic website-creds \
-    --from-literal=username=$looker_user \
-    --from-literal=password=$looker_pass
+  if ! [[ -z $looker_user || -z $looker_pass ]]
+  then
+    kubectl create secret generic website-creds \
+      --from-literal=username=$looker_user \
+      --from-literal=password=$looker_pass
+  fi
+}
+
+# Set the Looker API secret
+set_looker_api_secret() {
+  if ! [[ -z $looker_api_client_id || -z $looker_api_client_secret ]]
+  then
+    kubectl create secret generic api-creds \
+      --from-literal=client_id=$looker_api_client_id \
+      --from-literal=client_secret=$looker_api_client_secret
+  fi
 }
 
 # Self-contained only: Set AWS credentials for monitoring
@@ -326,6 +345,7 @@ self_contained_setup() {
   get_kubernetes_creds
   set_oauth_secret
   set_looker_secret
+  set_looker_api_secret
   set_aws_secret
   deploy_managed_certificate
   deploy_backend_config
@@ -349,6 +369,7 @@ external_setup() {
   get_kubernetes_creds
   set_oauth_secret
   set_looker_secret
+  set_looker_api_secret
   deploy_managed_certificate
   deploy_backend_config
   deploy_locust
