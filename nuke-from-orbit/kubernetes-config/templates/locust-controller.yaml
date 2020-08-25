@@ -57,17 +57,31 @@ spec:
             - name: TARGET_HOST
               value: dashboard
             - name: LOCUST_STEP
-              value: "true"
+              value: "{{loadtest_step_load}}"
             - name: USERNAME
               valueFrom:
                 secretKeyRef:
                   name: website-creds
                   key: username
+                  optional: true
             - name: PASS
               valueFrom:
                 secretKeyRef:
                   name: website-creds
                   key: password
+                  optional: true
+            - name: CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: api-creds
+                  key: client_id
+                  optional: true
+            - name: CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: api-creds
+                  key: client_secret
+                  optional: true
           ports:
             - name: loc-master-web
               containerPort: 8089
@@ -113,17 +127,31 @@ spec:
             - name: TARGET_HOST
               value: dashboard
             - name: LOCUST_STEP
-              value: "true"
+              value: "{{loadtest_step_load}}"
             - name: USERNAME
               valueFrom:
                 secretKeyRef:
                   name: website-creds
                   key: username
+                  optional: true
             - name: PASS
               valueFrom:
                 secretKeyRef:
                   name: website-creds
                   key: password
+                  optional: true
+            - name: CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: api-creds
+                  key: client_id
+                  optional: true
+            - name: CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: api-creds
+                  key: client_secret
+                  optional: true
 ---
 kind: Service
 apiVersion: v1
@@ -134,7 +162,7 @@ metadata:
 spec:
   ports:
     - port: 80
-      targetPort: lexp-web
+      targetPort: loc-metrics-web
       protocol: TCP
   selector:
     app: le-pod
@@ -163,6 +191,6 @@ spec:
             - name: LOCUST_EXPORTER_URI
               value: http://lm-pod:80
           ports:
-            - name: lexp-web
+            - name: loc-metrics-web
               containerPort: 9646
               protocol: TCP
