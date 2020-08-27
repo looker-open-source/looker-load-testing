@@ -103,7 +103,7 @@ gke_loadtest_cluster_gcloud() {
    --scopes "https://www.googleapis.com/auth/cloud-platform" \
    --num-nodes "$gcp_cluster_node_count" \
    --machine-type $gcp_cluster_machine_type \
-   --cluster-version "1.16.11-gke.5"
+   --release-channel regular
 }
 
 gke_loadtest_cluster_ip_gcloud() {
