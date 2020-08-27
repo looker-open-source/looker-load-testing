@@ -6,13 +6,23 @@ provider "google" {
   version = "~> 3.31"
 }
 
+provider "google-beta" {
+  credentials = file(var.gcp_creds)
+  project = var.project
+  region = var.region
+  zone = var.zone
+  version = "~> 3.36"
+}
+
 resource "google_container_cluster" "gke_load_test" {
+  provider = google-beta
   name = var.loadtest_name
   location = var.zone
   initial_node_count = var.node_count
 
-  node_version = "1.16.11-gke.5"
-  min_master_version = "1.16.11-gke.5"
+  release_channel {
+    channel = "REGULAR"
+  }
 
   node_config {
     machine_type = var.machine_type
