@@ -189,13 +189,13 @@ set_variables() {
 
   if [[ $warning != '' ]]
   then
-		warning=$(echo $warning | sed -e 's/,$//g')
+    warning=$(echo $warning | sed -e 's/,$//g')
     printf "\n${YELLOW}Warning: Did not find entries for the following parameters: [${warning}]. While these parameters are not required their absence may cause errors!${NC}\n"
   fi
 
   if [[ $error != '' ]]
   then
-		error=$(echo $error | sed 's/,$//g')
+    error=$(echo $error | sed 's/,$//g')
     printf "\n${RED}Error: Did not find entries for the following parameters: [${error}]. These values are required and must be present in order to continue!${NC}\n"
     exit 1
   fi
@@ -394,6 +394,17 @@ teardown() {
   fi
 }
 
+update() {
+  config_file=${script_dir}/config.json
+  echo $image_tag
+  set_variables
+  parse_config
+  build_loadtest_image
+  # set_looker_secret
+  # set_looker_api_secret
+  deploy_locust
+}
+
 # Parse command input
 case "$1" in
   setup)
@@ -404,8 +415,17 @@ case "$1" in
   teardown)
     teardown
   ;;
+  update)
+    if [[ $# -ne 2 ]]
+    then
+      echo $"Usage: $0 update [tag] <- a new tag for the updated test case"
+      exit 1
+    fi
+    image_tag=$2
+    update
+  ;;
   *)
-    echo $"Usage: $0 {setup|teardown}"
+    echo $"Usage: $0 {setup|teardown|update}"
     exit 1
   ;;
 esac
