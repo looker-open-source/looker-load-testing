@@ -221,22 +221,31 @@ set_oauth_secret() {
 }
 
 # Set the Looker username and password secret
+# dry run trick is to handle updates in place
 set_looker_secret() {
   if ! [[ -z $looker_user || -z $looker_pass ]]
   then
     kubectl create secret generic website-creds \
       --from-literal=username=$looker_user \
-      --from-literal=password=$looker_pass
+      --from-literal=password=$looker_pass \
+      --dry-run=client \
+      --save-config \
+      -o yaml \
+      | kubectl apply -f -
   fi
 }
 
 # Set the Looker API secret
+# dry run trick is to handle updates in place
 set_looker_api_secret() {
   if ! [[ -z $looker_api_client_id || -z $looker_api_client_secret ]]
   then
     kubectl create secret generic api-creds \
       --from-literal=client_id=$looker_api_client_id \
       --from-literal=client_secret=$looker_api_client_secret
+      --dry-run=client \
+      -o yaml \
+      | kubectl apply -f -
   fi
 }
 
@@ -299,6 +308,27 @@ set_iap_bindings() {
   done
 }
 
+compare_tags() {
+  current_tag=$(kubectl get deployment lw-pod -o json | jq -r '.spec.template.spec.containers[0].image' | cut -f 2 -d ':')
+  echo "Updating tag from ${current_tag} to ${image_tag}"
+  if [[ $current_tag == $image_tag ]]
+  then
+    printf "\n${RED}Error: Provided tag matches current tag. Please enter a unique tag.${NC}\n"
+    exit 1
+  fi
+}
+
+spin_down_workers() {
+  echo "Spinning down workers"
+  kubectl scale deployment/lw-pod --replicas=0
+}
+
+spin_up_workers() {
+  echo "Spinning up workers"
+  kubectl scale deployment/lw-pod --replicas=0
+  sleep 10
+  kubectl scale deployment/lw-pod --replicas=$workers
+}
 
 # Parse input parameters
 
@@ -396,13 +426,17 @@ teardown() {
 
 update() {
   config_file=${script_dir}/config.json
-  echo $image_tag
+  workers=$(kubectl get deployment lw-pod -o json | jq -r '.status.replicas')
+  echo $workers
+  compare_tags
   set_variables
   parse_config
+  spin_down_workers
   build_loadtest_image
-  # set_looker_secret
-  # set_looker_api_secret
+  set_looker_secret
+  set_looker_api_secret
   deploy_locust
+  spin_up_workers
 }
 
 # Parse command input
@@ -429,5 +463,6 @@ case "$1" in
     exit 1
   ;;
 esac
+
 
 exit 0
