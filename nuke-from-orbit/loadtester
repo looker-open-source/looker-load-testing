@@ -244,8 +244,9 @@ set_looker_api_secret() {
   then
     kubectl create secret generic api-creds \
       --from-literal=client_id=$looker_api_client_id \
-      --from-literal=client_secret=$looker_api_client_secret
+      --from-literal=client_secret=$looker_api_client_secret \
       --dry-run=client \
+      --save-config \
       -o yaml \
       | kubectl apply -f -
   fi
