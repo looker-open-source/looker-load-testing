@@ -140,6 +140,7 @@ Navigate to the nuke-from-orbit directory and create a json file called ‘confi
 
 * **loadtest_name**: A unique identifier for your load test
 * **loadtest_dns_domain**: The DNS domain/subdomain name
+* **loadtest_worker_count**: How many workers should be created
 * **gcp_project_id**: The project ID of your GCP project
 * **gcp_region**: The GCP region
 * **gcp_zone**: The GCP zone
@@ -156,6 +157,7 @@ Your config may look something like this:
 {
   "loadtest_name": "my-gke-load-test-name",
   "loadtest_dns_domain": "loadtest.company.com",
+  "loadtest_worker_count": 5,
   "gcp_project_id": "my-gcp-project-name",
   "gcp_region": "us-central1",
   "gcp_zone": "us-central1-c",
@@ -199,6 +201,23 @@ worker pods. To increase the number of pods deployed by the deployment, Kubernet
 deployments without redeploying them. For example, the following command scales the pool of Locust worker pods to 20:
 
         $ kubectl scale deployment/lw-pod --replicas=20
+
+### Updating the test
+
+Since the test script is a part of the container you build and deploy any updates to the test script will require
+building and deploying a new container. This process has been automated with an `update` command. Make your required
+changes to the test script and then run the following command:
+
+    $ ./loadtester update <tag>
+
+This will rebuild the container and execute the correct steps to update the kubernetes deployment. These changes will be
+available immediately upon completion of the command - no need to redeploy the ingress or wait for DNS this time around!
+
+> Note: You must provide a unique tag to trigger a rebuild - attempting to use the same tag will result in an error.
+> Consider using a tag that includes a version number. When you first deploy the load tester it automatically creates a
+> tag of 'v1' so one good option is to simply increment the number, e.g. 'v2', 'v3', etc. The exception to this rule is
+> using the 'latest' tag which will always be accepted and automatically trigger a rebuild, per Docker and Kubernetes
+> convention.
 
 ### Monitoring
 
