@@ -145,6 +145,7 @@ set_variables() {
   loadtest_name=$(cat $config_file | jq -r '.loadtest_name // empty' | tr -d '[:space:]')
   loadtest_dns_domain=$(cat $config_file | jq -r '.loadtest_dns_domain // empty' | tr -d '[:space:]')
   loadtest_step_load=$(cat $config_file | jq -r '.loadtest_step_load // empty' | tr -d '[:space:]')
+  loadtest_worker_count=$(cat $config_file | jq -r '.loadtest_worker_count // empty' | tr -d '[:space:]')
   gcp_oauth_client_id=$(cat $config_file | jq -r '.gcp_oauth_client_id // empty' | tr -d '[:space:]')
   gcp_oauth_client_secret=$(cat $config_file | jq -r '.gcp_oauth_client_secret // empty' | tr -d '[:space:]')
   gcp_zone=$(cat $config_file | jq -r '.gcp_zone // empty' | tr -d '[:space:]')
@@ -171,6 +172,7 @@ set_variables() {
     if [[ -z $gcp_project_id ]]; then error+="gcp_project_id,"; fi
     if [[ -z $loadtest_name ]]; then error+="loadtest_name,"; fi
     if [[ -z $loadtest_step_load ]]; then error+="loadtest_step_load,"; fi
+    if [[ -z $loadtest_worker_count ]]; then error+="loadtest_worker_count,"; fi
     if [[ -z $loadtest_dns_domain ]]; then error+="loadtest_dns_domain,"; fi
     if [[ -z $gcp_zone ]]; then error+="gcp_zone,"; fi
     if [[ -z $gcp_cluster_node_count ]]; then error+="gcp_cluster_node_count,"; fi
@@ -270,6 +272,8 @@ deploy_backend_config() {
 # Deploy the locust stack
 deploy_locust() {
   kubectl apply -f ${config_dir}/locust-controller.yaml
+  kubectl rollout status deployment/lm-pod
+  kubectl apply -f ${config_dir}/locust-worker-controller.yaml
 }
 
 # Self-contained only: deploy cloudwatch monitoring stack
@@ -308,6 +312,18 @@ set_iap_bindings() {
   done
 }
 
+# checks worker variable against available CPUs
+check_worker_count() {
+  cores=$(echo $gcp_cluster_machine_type | cut -f 3 -d '-')
+  available_cpus=$(($cores * $gcp_cluster_node_count))
+  if [[ $loadtest_worker_count -ge $available_cpus ]]
+  then
+    printf "\n${RED}Error: Requested worker count of ${loadtest_worker_count} exceeds cluster capacity of ${available_cpus}. Please increase available CPUs or request fewer workers.${NC}\n"
+    exit 1
+  fi
+}
+
+# Compares update tag to original tag
 compare_tags() {
   current_tag=$(kubectl get deployment lw-pod -o json | jq -r '.spec.template.spec.containers[0].image' | cut -f 2 -d ':')
   echo "Updating tag from ${current_tag} to ${image_tag}"
@@ -318,16 +334,10 @@ compare_tags() {
   fi
 }
 
+# Removes old workers to prevent resource contention
 spin_down_workers() {
   echo "Spinning down workers"
   kubectl scale deployment/lw-pod --replicas=0
-}
-
-spin_up_workers() {
-  echo "Spinning up workers"
-  kubectl scale deployment/lw-pod --replicas=0
-  sleep 10
-  kubectl scale deployment/lw-pod --replicas=$workers
 }
 
 # Parse input parameters
@@ -392,6 +402,7 @@ self_contained_setup() {
 external_setup() {
   echo "External setup triggered"
   set_variables
+  check_worker_count
   gke_loadtest_cluster_gcloud
   gke_loadtest_cluster_ip_gcloud
   parse_config
@@ -426,17 +437,15 @@ teardown() {
 
 update() {
   config_file=${script_dir}/config.json
-  workers=$(kubectl get deployment lw-pod -o json | jq -r '.status.replicas')
-  echo $workers
   compare_tags
   set_variables
+  check_worker_count
   parse_config
   spin_down_workers
   build_loadtest_image
   set_looker_secret
   set_looker_api_secret
   deploy_locust
-  spin_up_workers
 }
 
 # Parse command input
