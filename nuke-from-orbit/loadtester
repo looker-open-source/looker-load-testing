@@ -327,18 +327,23 @@ check_worker_count() {
 # Compares update tag to original tag
 compare_tags() {
   current_tag=$(kubectl get deployment lw-pod -o json | jq -r '.spec.template.spec.containers[0].image' | cut -f 2 -d ':')
-  echo "Updating tag from ${current_tag} to ${image_tag}"
-  if [[ $current_tag == $image_tag ]]
+  if [[ $image_tag == 'latest' ]]
+  then
+    printf "\n${YELLOW}Warning: Use of latest tag detected. This will work just fine but you may want to consider using a unique tag with a version (e.g. v2, v3 etc).${NC}\n"
+  elif [[ $image_tag != 'latest' && $current_tag == $image_tag ]]
   then
     printf "\n${RED}Error: Provided tag matches current tag. Please enter a unique tag.${NC}\n"
     exit 1
+  else
+    echo "Updating tag from ${current_tag} to ${image_tag}"
   fi
 }
 
-# Removes old workers to prevent resource contention
-spin_down_workers() {
-  echo "Spinning down workers"
-  kubectl scale deployment/lw-pod --replicas=0
+# Removes old workers and master to prevent resource contention and force correct rebuild
+spin_down_locust() {
+  echo "Spinning down locust deployments"
+  kubectl delete deployment lw-pod
+  kubectl delete deployment lm-pod
 }
 
 # Parse input parameters
@@ -442,7 +447,7 @@ update() {
   set_variables
   check_worker_count
   parse_config
-  spin_down_workers
+  spin_down_locust
   build_loadtest_image
   set_looker_secret
   set_looker_api_secret
@@ -462,7 +467,7 @@ case "$1" in
   update)
     if [[ $# -ne 2 ]]
     then
-      echo $"Usage: $0 update [tag] <- a new tag for the updated test case"
+      echo $"Usage: $0 update [tag] <- a new tag for the updated test case. Consider using a tag with a version number (e.g. v2, v3, etc.)"
       exit 1
     fi
     image_tag=$2
