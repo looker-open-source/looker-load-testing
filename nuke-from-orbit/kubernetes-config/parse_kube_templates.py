@@ -85,6 +85,7 @@ def main():
             SCRIPT_PATH.joinpath("templates", "loadtest-cert.yaml"),
             SCRIPT_PATH.joinpath("templates", "loadtest-ingress.yaml"),
             SCRIPT_PATH.joinpath("templates", "locust-controller.yaml"),
+            SCRIPT_PATH.joinpath("templates", "locust-worker-controller.yaml"),
             SCRIPT_PATH.joinpath("templates", "config-default.yaml")
         ]
         values_dict = {}
