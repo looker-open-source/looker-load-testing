@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-# Stop on error
-set -e
-
 # Set convenience variables
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 config_dir=${script_dir}/kubernetes-config
@@ -346,67 +343,44 @@ spin_down_locust() {
   kubectl delete deployment lm-pod
 }
 
-# Parse input parameters
-
-## If setup is selected parse the additional options
-parse_setup_options() {
-  if ! [[ -z $setup_command ]]
-  then
-    case "$setup_command" in
-      self-contained)
-        echo "This is an advanced setup mode and likely not what you want. Are you sure you want to proceed? (yes/no)"
-        read confirm
-        if [[ $confirm == 'yes' ]]
-        then
-          echo -n "self-contained" > ${script_dir}/.deploy_type
-          config_file=${script_dir}/.self_contained_params.json
-          universal_requirements_check
-          self_contained_requirements_check
-          self_contained_setup
-        else
-          echo "Aborting..."
-        fi
-      ;;
-      *)
-        echo "Usage: $0 setup {self-contained}"
-      ;;
-    esac
-  else
-    echo -n "external" > ${script_dir}/.deploy_type
-    config_file=${script_dir}/config.json
-    universal_requirements_check
-    external_setup
-  fi
-}
-
 # Define aggregate functions
 self_contained_setup() {
   echo "Self contained setup triggered"
-  gke_cluster_deploy
-  loadtest_dns_deploy
-  looker_deploy
-  parse_config
-  set_variables
-  build_loadtest_image
-  get_kubernetes_creds
-  set_oauth_secret
-  set_looker_secret
-  set_looker_api_secret
-  set_aws_secret
-  deploy_managed_certificate
-  deploy_backend_config
-  deploy_locust
-  deploy_cloudwatch
-  deploy_prometheus
-  deploy_grafana
-  deploy_ingress
-  provision_looker
-  set_iap_bindings
+  echo "This is an advanced setup mode and likely not what you want. Are you sure you want to proceed? (yes/no)"
+  read confirm
+  if [[ $confirm == 'yes' ]]
+  then
+    echo -n "self-contained" > ${script_dir}/.deploy_type
+    config_file=${script_dir}/.self_contained_params.json
+    self_contained_requirements_check
+    gke_cluster_deploy
+    loadtest_dns_deploy
+    looker_deploy
+    parse_config
+    set_variables
+    build_loadtest_image
+    get_kubernetes_creds
+    set_oauth_secret
+    set_looker_secret
+    set_looker_api_secret
+    set_aws_secret
+    deploy_managed_certificate
+    deploy_backend_config
+    deploy_locust
+    deploy_cloudwatch
+    deploy_prometheus
+    deploy_grafana
+    deploy_ingress
+    provision_looker
+  else
+    echo "Aborting..."
+  fi
 }
-
 
 external_setup() {
   echo "External setup triggered"
+  echo -n "external" > ${script_dir}/.deploy_type
+  config_file=${script_dir}/config.json
   set_variables
   check_worker_count
   gke_loadtest_cluster_gcloud
@@ -424,7 +398,6 @@ external_setup() {
   printf "\n${GREEN}Cluster IP address is ${loadtest_ip_address}. Please create an A Record in your DNS provider for *.${loadtest_dns_domain} that points to ${loadtest_ip_address}.${NC}\n"
 }
 
-
 teardown() {
   deploy_type=$(cat ${script_dir}/.deploy_type)
   if [[ $deploy_type == 'self-contained' ]]
@@ -441,7 +414,7 @@ teardown() {
   fi
 }
 
-update() {
+update_test() {
   config_file=${script_dir}/config.json
   compare_tags
   set_variables
@@ -454,30 +427,109 @@ update() {
   deploy_locust
 }
 
+update_config() {
+  config_file=${script_dir}/config.json
+  set_variables
+  check_worker_count
+  parse_config
+  spin_down_locust
+  set_looker_secret
+  set_looker_api_secret
+  deploy_locust
+}
+
+print_help() {
+  echo "Usage:"
+  echo "    loadtester -h                             Display this help message"
+  echo "    loadtester setup [self-contained]         Sets up the load tester. If self-contained is specified attempts advanced self-contained mode (not recommended)."
+  echo "    loadtester update test [-t <tag>]|config  Updates either the test script or config. Updating the test will rebuild the containers versioned on the provided tag."
+  echo "    loadtester teardown                       Tears down the load tester."
+}
+
 # Parse command input
-case "$1" in
+universal_requirements_check
+while getopts ":h" opt; do
+  case ${opt} in
+    h )
+      print_help
+      ;;
+    \? )
+      echo "Invalid Option: -$OPTARG" 1>&2
+      exit 1
+      ;;
+    : )
+      print_help
+      exit 1
+      ;;
+  esac
+done
+shift $((OPTIND -1))
+
+subcommand=$1; shift
+case "$subcommand" in
   setup)
+    setup_command=$1; shift
     image_tag='v1'
-    setup_command=$2
-    parse_setup_options
-  ;;
+    if ! [[ -z $setup_command ]]
+    then
+      case "$setup_command" in
+        self-contained)
+          self_contained_setup
+          ;;
+        *)
+          echo "Invalid Option: $setup_command" 1>&2
+          print_help
+          exit 1
+          ;;
+      esac
+    else
+      echo "debug: in external_setup"
+      external_setup
+    fi
+    ;;
+  update)
+    update_command=$1; shift
+    case "$update_command" in
+      config)
+        image_tag=$(kubectl get deployment lw-pod -o json | jq -r '.spec.template.spec.containers[0].image' | cut -f 2 -d ':')
+        update_config
+        ;;
+      test)
+        while getopts ":t:" opt; do
+          case ${opt} in
+            t)
+              image_tag=$OPTARG
+              ;;
+            \?)
+              echo "Invalid Option: -$OPTARG" 1>&2
+              exit 1
+              ;;
+          esac
+        done
+        shift $((OPTIND -1))
+        if ! [[ -z $image_tag ]]
+        then
+          update_test
+        else
+          echo "Please provide a tag"
+          print_help
+          exit 1
+        fi
+        ;;
+      *)
+        echo "Invalid Option: $update_command" 1>&2
+        exit 1
+        ;;
+    esac
+    ;;
   teardown)
     teardown
-  ;;
-  update)
-    if [[ $# -ne 2 ]]
-    then
-      echo $"Usage: $0 update [tag] <- a new tag for the updated test case. Consider using a tag with a version number (e.g. v2, v3, etc.)"
-      exit 1
-    fi
-    image_tag=$2
-    update
-  ;;
+    ;;
   *)
-    echo $"Usage: $0 {setup|teardown|update}"
+    echo "Invalid Option: $subcommand" 1>&2
+    print_help
     exit 1
-  ;;
-esac
-
+    ;;
+  esac
 
 exit 0
