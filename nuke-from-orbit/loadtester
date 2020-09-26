@@ -440,24 +440,28 @@ update_config() {
 
 print_help() {
   echo "Usage:"
-  echo "    loadtester -h                             Display this help message"
+  echo "    loadtester -h                             Display this help message."
+  echo "    loadtester -v                             Display the version of the tool and exit."
   echo "    loadtester setup [self-contained]         Sets up the load tester. If self-contained is specified attempts advanced self-contained mode (not recommended)."
-  echo "    loadtester update test [-t <tag>]|config  Updates either the test script or config. Updating the test will rebuild the containers versioned on the provided tag."
+  echo "    loadtester update test -t <tag>|config  Updates either the test script or config. Updating the test will rebuild the containers versioned on the provided tag."
   echo "    loadtester teardown                       Tears down the load tester."
 }
 
 # Parse command input
 universal_requirements_check
-while getopts ":h" opt; do
+while getopts ":hv" opt; do
   case ${opt} in
-    h )
+    h)
       print_help
+      exit 0
       ;;
-    \? )
+    v)
+      version=$(cat ${script_dir}/.version)
+      echo $version
+      exit 0
+      ;;
+    *)
       echo "Invalid Option: -$OPTARG" 1>&2
-      exit 1
-      ;;
-    : )
       print_help
       exit 1
       ;;
@@ -483,7 +487,6 @@ case "$subcommand" in
           ;;
       esac
     else
-      echo "debug: in external_setup"
       external_setup
     fi
     ;;
