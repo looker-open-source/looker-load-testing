@@ -150,6 +150,7 @@ set_variables() {
     'gcp_oauth_client_secret'
     'gcp_zone'
     'gcp_cluster_node_count'
+    'gcp_cluster_machine_type'
   )
 
   # Set optional args here
@@ -173,7 +174,11 @@ set_variables() {
   )
 
   # Create an array of argument arrays to iterate through
-  subgroups=('required_args' 'optional_args' 'required_self_contained_args' 'optional_self_contained_args')
+  subgroups=('required_args' 'optional_args')
+  if [[ $setup_command == 'self-contained' ]]
+  then
+    subgroups+=('required_self_contained_args' 'optional_self_contained_args')
+  fi
 
   # Initialize arrays for errors and warnings
   errors=()
@@ -190,7 +195,7 @@ set_variables() {
 
     # For each array set variables appropriately and append missing to errors or warnings
     for i in "${lst[@]}"; do
-      val=$(cat $configfile | jq -r --arg i "$i" '.|.[$i] // empty' | tr -d '[:space:]')
+      val=$(cat $config_file | jq -r --arg i "$i" '.|.[$i] // empty' | tr -d '[:space:]')
       if [[ -z $val ]] && [[ $type == 'required' ]]
       then
         errors+=($i)
@@ -207,14 +212,14 @@ set_variables() {
   if ! [[ -z $warnings ]]
   then
     printf "\n${YELLOW}Warning: Did not find entries for the following parameters. While these parameters are not required their absence may cause errors!${NC}\n"
-    printf '%s\n' "${warnings[@]}"
+    printf "${YELLOW}%s${NC}\n" "${warnings[@]}"
   fi
 
   # If there are any errors print them and crash out
   if ! [[ -z $errors ]]
   then
     printf "\n${RED}Error: Did not find entries for the following parameters. These values are required and must be present in order to continue!${NC}\n"
-    printf '%s\n' "${errors[@]}"
+    printf "${RED}%s${NC}\n" "${errors[@]}"
     exit 1
   fi
 }
