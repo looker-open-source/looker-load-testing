@@ -448,16 +448,19 @@ print_help() {
 
 # Parse command input
 universal_requirements_check
-while getopts ":h" opt; do
+while getopts ":hv" opt; do
   case ${opt} in
-    h )
+    h)
       print_help
+      exit 0
       ;;
-    \? )
+    v)
+      version=$(cat ${script_dir}/.version)
+      echo $version
+      exit 0
+      ;;
+    *)
       echo "Invalid Option: -$OPTARG" 1>&2
-      exit 1
-      ;;
-    : )
       print_help
       exit 1
       ;;
@@ -483,7 +486,6 @@ case "$subcommand" in
           ;;
       esac
     else
-      echo "debug: in external_setup"
       external_setup
     fi
     ;;
