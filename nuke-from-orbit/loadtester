@@ -138,64 +138,83 @@ provision_looker() {
 
 # Parse relevant config file to set needed variables
 set_variables() {
-  gcp_project_id=$(cat $config_file | jq -r '.gcp_project_id // empty' | tr -d '[:space:]')
-  loadtest_name=$(cat $config_file | jq -r '.loadtest_name // empty' | tr -d '[:space:]')
-  loadtest_dns_domain=$(cat $config_file | jq -r '.loadtest_dns_domain // empty' | tr -d '[:space:]')
-  loadtest_step_load=$(cat $config_file | jq -r '.loadtest_step_load // empty' | tr -d '[:space:]')
-  loadtest_worker_count=$(cat $config_file | jq -r '.loadtest_worker_count // empty' | tr -d '[:space:]')
-  gcp_oauth_client_id=$(cat $config_file | jq -r '.gcp_oauth_client_id // empty' | tr -d '[:space:]')
-  gcp_oauth_client_secret=$(cat $config_file | jq -r '.gcp_oauth_client_secret // empty' | tr -d '[:space:]')
-  gcp_zone=$(cat $config_file | jq -r '.gcp_zone // empty' | tr -d '[:space:]')
-  gcp_iap_email=$(cat $config_file | jq -r '.gcp_iap_email // empty' | tr -d '[:space:]')
-  gcp_cluster_node_count=$(cat $config_file | jq -r '.gcp_cluster_node_count // empty' | tr -d '[:space:]')
-  gcp_cluster_machine_type=$(cat $config_file | jq -r '.gcp_cluster_machine_type // empty' | tr -d '[:space:]')
-  looker_user=$(cat $config_file | jq -r '.looker_user // empty' | tr -d '[:space:]')
-  looker_pass=$(cat $config_file | jq -r '.looker_pass // empty' | tr -d '[:space:]')
-  looker_api_client_id=$(cat $config_file | jq -r '.looker_api_client_id // empty' | tr -d '[:space:]')
-  looker_api_client_secret=$(cat $config_file | jq -r '.looker_api_client_secret // empty' | tr -d '[:space:]')
-  aws_access_key=$(cat $config_file | jq -r '.aws_access_key // empty' | tr -d '[:space:]')
-  aws_secret_key=$(cat $config_file | jq -r '.aws_secret_access_key // empty' | tr -d '[:space:]')
-  aws_session_token=$(cat $config_file | jq -r '.aws_session_token // empty' | tr -d '[:space:]')
-  lookml_project_repo=$(cat $config_file | jq -r '.lookml_project_repo // empty' | tr -d '[:space:]')
 
-  error=''
-  warning=''
+  # Set required args here
+  required_args=(
+    'gcp_project_id'
+    'loadtest_name'
+    'loadtest_dns_domain'
+    'loadtest_step_load'
+    'loadtest_worker_count'
+    'gcp_oauth_client_id'
+    'gcp_oauth_client_secret'
+    'gcp_zone'
+    'gcp_cluster_node_count'
+  )
 
-  if [[ -z $gcp_oauth_client_id ]]; then error+="gcp_oauth_client_id,"; fi
-  if [[ -z $gcp_oauth_client_secret ]]; then error+="gcp_oauth_client_secret,"; fi
+  # Set optional args here
+  optional_args=(
+    'looker_user'
+    'looker_pass'
+    'looker_api_client_id'
+    'looker_api_client_secret'
+  )
 
-  if ! [[ $setup_command == 'self-contained' ]]
+  # Set required args for self contained mode here
+  required_self_contained_args=(
+    'aws_access_key'
+    'aws_secret_key'
+    'lookml_project_repo'
+  )
+
+  # Set optional args for self contained mode here
+  optional_self_contained_args=(
+    'aws_session_token'
+  )
+
+  # Create an array of argument arrays to iterate through
+  subgroups=('required_args' 'optional_args' 'required_self_contained_args' 'optional_self_contained_args')
+
+  # Initialize arrays for errors and warnings
+  errors=()
+  warnings=()
+
+  # Loop through array of arrays
+  for group in "${subgroups[@]}"; do
+    # set the type to either 'required' or 'optional'
+    # used to determine if missing vals are errors or warnings
+    type=$(echo $group | cut -f 1 -d '_')
+
+    # set variable for nested array iteration
+    declare -n lst="$group"
+
+    # For each array set variables appropriately and append missing to errors or warnings
+    for i in "${lst[@]}"; do
+      val=$(cat $configfile | jq -r --arg i "$i" '.|.[$i] // empty' | tr -d '[:space:]')
+      if [[ -z $val ]] && [[ $type == 'required' ]]
+      then
+        errors+=($i)
+      elif [[ -z $val ]] && [[ $type == 'optional' ]]
+      then
+        warnings+=($i)
+      else
+        eval "$i=$val"
+      fi
+    done
+  done
+
+  # If there are any warnings print them
+  if ! [[ -z $warnings ]]
   then
-    if [[ -z $gcp_project_id ]]; then error+="gcp_project_id,"; fi
-    if [[ -z $loadtest_name ]]; then error+="loadtest_name,"; fi
-    if [[ -z $loadtest_step_load ]]; then error+="loadtest_step_load,"; fi
-    if [[ -z $loadtest_worker_count ]]; then error+="loadtest_worker_count,"; fi
-    if [[ -z $loadtest_dns_domain ]]; then error+="loadtest_dns_domain,"; fi
-    if [[ -z $gcp_zone ]]; then error+="gcp_zone,"; fi
-    if [[ -z $gcp_cluster_node_count ]]; then error+="gcp_cluster_node_count,"; fi
-    if [[ -z $gcp_cluster_machine_type ]]; then error+="gcp_cluster_machine_type,"; fi
-    if [[ -z $looker_user ]]; then warning+="looker_user,"; fi
-    if [[ -z $looker_pass ]]; then warning+="looker_pass,"; fi
-    if [[ -z $looker_api_client_id ]]; then warning+="looker_api_client_id,"; fi
-    if [[ -z $looker_api_client_secret ]]; then warning+="looker_api_client_secret,"; fi
-  else
-    if [[ -z $aws_access_key ]]; then error+="aws_access_key,"; fi
-    if [[ -z $aws_secret_key ]]; then error+="aws_secret_key,"; fi
-    if [[ -z $aws_session_token ]]; then warning+="aws_session_token,"; fi
-    if [[ -z $lookml_project_repo ]]; then error+="lookml_project_repo,"; fi
-    if [[ -z $gcp_iap_email ]]; then error+="gcp_iap_email,"; fi
+    printf "\n${YELLOW}Warning: Did not find entries for the following parameters. While these parameters are not required their absence may cause errors!${NC}\n"
+    printf '%s\n' "${warnings[@]}"
   fi
 
-  if [[ $warning != '' ]]
+  # If there are any errors print them and crash out
+  if ! [[ -z $errors ]]
   then
-    warning=$(echo $warning | sed -e 's/,$//g')
-    printf "\n${YELLOW}Warning: Did not find entries for the following parameters: [${warning}]. While these parameters are not required their absence may cause errors!${NC}\n"
-  fi
-
-  if [[ $error != '' ]]
-  then
-    error=$(echo $error | sed 's/,$//g')
-    printf "\n${RED}Error: Did not find entries for the following parameters: [${error}]. These values are required and must be present in order to continue!${NC}\n"
+    printf "\n${RED}Error: Did not find entries for the following parameters. These values are required and must be present in order to continue!${NC}\n"
+    printf '%s\n' "${errors[@]}"
     exit 1
   fi
 }
