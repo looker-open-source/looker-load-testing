@@ -440,7 +440,8 @@ update_config() {
 
 print_help() {
   echo "Usage:"
-  echo "    loadtester -h                             Display this help message"
+  echo "    loadtester -h                             Display this help message."
+  echo "    loadtester -v                             Display the version of the tool and exit."
   echo "    loadtester setup [self-contained]         Sets up the load tester. If self-contained is specified attempts advanced self-contained mode (not recommended)."
   echo "    loadtester update test [-t <tag>]|config  Updates either the test script or config. Updating the test will rebuild the containers versioned on the provided tag."
   echo "    loadtester teardown                       Tears down the load tester."
