@@ -229,7 +229,7 @@ set_variables() {
 # Build (or rebuild) the load test image
 build_loadtest_image() {
   cp ${test_dir}/${loadtest_script_name}.py ${script_dir}/docker-image/locust-tasks/tasks.py
-  # gcloud builds submit --tag gcr.io/${gcp_project_id}/${loadtest_name}:${image_tag} docker-image/.
+  gcloud builds submit --tag gcr.io/${gcp_project_id}/${loadtest_name}:${image_tag} docker-image/.
 }
 
 # Configure access to kubernetes cluster via gcloud
