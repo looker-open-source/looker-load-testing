@@ -127,20 +127,27 @@ The Following services should be enabled in your project:
 
 ### Write your test manifest
 
-**Very Important!** Modify the contents of `docker-image/locust-tasks/tasks.py` to suit your testing criteria
+Navigate to the `test_scripts` directory and create your test script. Documentation for standard http tests can be found
+[here](https://docs.locust.io/en/0.14.6/writing-a-locustfile.html)
 
-> The example `tasks.py` outlines a standard dashboard rendering performance test. Near the top of the file you will
-> want to modify the `SITE` and `DASH_ID` variables to match the Looker instance you are testing and the relevant
-> dashboard id. Different testing goals will require specific test code - Locust is flexible enough to handle just about
-> any kind of test you can think of!
+Examples for browser-based tests can be found in `test_scripts`.
+
+You will need to pass the relevant script name into the config file - see below for more details.
+
+> The example `defaut_dashboard_loadtest` outlines a standard dashboard rendering performance test. If you want to use this with
+> your own instance, near the top of the file you will want to modify the `SITE` and `DASH_ID` variables to match the Looker instance
+> you are testing and the relevant dashboard id. Different testing goals will require specific test code - Locust is flexible enough
+> to handle just about any kind of test you can think of!
 
 ### Set Config Parameters
 
 Navigate to the nuke-from-orbit directory and create a json file called ‘config.json’. You’ll need to add entries for the following items:
 
 * **loadtest_name**: A unique identifier for your load test
+* **loadtest_step_load**: ("true"|"false") Should locust run in [step mode](https://docs.locust.io/en/0.14.6/running-locust-in-step-load-mode.html)
 * **loadtest_dns_domain**: The DNS domain/subdomain name
 * **loadtest_worker_count**: How many workers should be created
+* **loadtest_script_name**: The name of the script that contains your test logic. Only include the script name - do not include the .py extension
 * **gcp_project_id**: The project ID of your GCP project
 * **gcp_region**: The GCP region
 * **gcp_zone**: The GCP zone
@@ -148,16 +155,20 @@ Navigate to the nuke-from-orbit directory and create a json file called ‘confi
 * **gcp_oauth_client_secret**: The OAuth Client Secret you generated earlier
 * **gcp_cluster_node_count**: How many nodes should be included in the load test cluster
 * **gcp_cluster_machine_type**: What compute instance machine type should be used? (Almost certainly a C2 type instance)
-* **looker_user**: The username of the Looker instance you are testing
-* **looker_pass**: The password of the Looker instance you are testing
+* **looker_user**: (Optional) The username of the Looker instance you are testing
+* **looker_pass**: (Optional) The password of the Looker instance you are testing
+* **looker_api_client_id**: (Optional) The API client_id of the Looker instance you are testing
+* **looker_api_client_secret**: (Optional) The API client_secret of the Looker instance you are testing
 
 Your config may look something like this:
 
 ```
 {
   "loadtest_name": "my-gke-load-test-name",
+  "loadtest_step_load": "true",
   "loadtest_dns_domain": "loadtest.company.com",
   "loadtest_worker_count": 5,
+  "loadtest_script_name": "defaut_dashboard_loadtest",
   "gcp_project_id": "my-gcp-project-name",
   "gcp_region": "us-central1",
   "gcp_zone": "us-central1-c",

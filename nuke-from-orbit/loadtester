@@ -3,6 +3,7 @@
 # Set convenience variables
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 config_dir=${script_dir}/kubernetes-config
+test_dir=${script_dir}/test_scripts
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
@@ -146,6 +147,7 @@ set_variables() {
     'loadtest_dns_domain'
     'loadtest_step_load'
     'loadtest_worker_count'
+    'loadtest_script_name'
     'gcp_oauth_client_id'
     'gcp_oauth_client_secret'
     'gcp_zone'
@@ -226,6 +228,7 @@ set_variables() {
 
 # Build (or rebuild) the load test image
 build_loadtest_image() {
+  cp ${test_dir}/${loadtest_script_name}.py ${script_dir}/docker-image/locust-tasks/tasks.py
   gcloud builds submit --tag gcr.io/${gcp_project_id}/${loadtest_name}:${image_tag} docker-image/.
 }
 

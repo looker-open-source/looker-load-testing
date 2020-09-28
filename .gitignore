@@ -25,3 +25,4 @@ nuke-from-orbit/docker-image/monitoring/
 nuke-from-orbit/docker-image/prom/
 nuke-from-orbit/docker-image/README.md
 .deploy_type
+nuke-from-orbit/docker-image/locust-tasks/tasks.py
