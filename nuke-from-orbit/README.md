@@ -13,7 +13,7 @@ the steps are:
 1. Build a Docker image of your locust tests
 2. Spin up a Kubernetes cluster
 3. Create the master and worker deployments, the service, and any related secrets
-4. Provide ingress, secured with HTTPS and some form of authentication (IAP in this case)
+4. (Optional) Provide ingress, secured with HTTPS and some form of authentication (IAP in this case)
 5. (Optional) Wire it up to a monitoring solution, like Grafana
 
 ## A note on scaling
@@ -44,8 +44,10 @@ installations. You will also need [Pipenv](https://pipenv-fork.readthedocs.io/en
 
 You will also need [jq](https://stedolan.github.io/jq/), a command-line JSON parsing utility.
 
-Finally, in order for https and IAP to work correctly you will need to own or have control of a registered domain. You should
-have the ability to create an A-Record from that domain's DNS.
+Finally, if you would like to use the optional Ingress + IAP setup, then in order for it to work correctly you will need to own or have control of a registered domain. You should
+have the ability to create an A-Record from that domain's DNS. This option is best if you have people who need to access the test control panel (a web service running in the cluster) but do not have privileges to access the cluster with `kubectl`.
+
+If you choose not to use IAP, you can connect to the web UI using the `kubectl port-forward` command (instructions will be printed after setup). Whether IAP is used or not is determined by whether you have the "loadtest_dns_domain" property in the config file.
 
 ## Before you begin
 
@@ -56,7 +58,7 @@ assets of course)
 ### From the GCP Console
 
 1. Create a suitable GCP Project. I recommend creating a new unique project for the load testing tool. We don’t want to run the risk of trampling other projects you may be working on.
-2. Create a service account in your new project:
+2. [Note: this step is optional if you are comfortable logging in to the `gcloud` command with your regular user account. However, that may not match the best practices for your organization.] Create a service account in your new project:
     * Navigate to IAM-Admin -> Service Accounts, click Create Service Account at top of page.
     * Follow the instructions to create a service account:
     * On the second page when prompted for roles you can give it Project Editor.
@@ -65,6 +67,8 @@ assets of course)
         * Select JSON key and a credentials json file will be downloaded to your system.
 
 > ⚠ **WARNING: This file should be considered sensitive and should be secured appropriately.**
+
+If you are using the optional IAP setup, then these steps are required as well:
 
 3. Assign IAP WebApp User Permissions to yourself:
     * Navigate to IAM-Admin -> IAM
@@ -100,7 +104,7 @@ Using `pipenv`, install the required Python libraries:
 
 ### Activate Your gcloud Service Account
 
-You will need to activate the service account using the credentials file you generated above:
+If using a service account to login to `gcloud`, then you will need to activate the service account using the credentials file generated above:
 
     $ gcloud auth activate-service-account foobar@myproject.iam.gserviceaccount.com --key-file path/to/credentials.json
 
@@ -139,34 +143,36 @@ The Following services should be enabled in your project:
 Navigate to the nuke-from-orbit directory and create a json file called ‘config.json’. You’ll need to add entries for the following items:
 
 * **loadtest_name**: A unique identifier for your load test
-* **loadtest_dns_domain**: The DNS domain/subdomain name
 * **loadtest_worker_count**: How many workers should be created
 * **gcp_project_id**: The project ID of your GCP project
 * **gcp_region**: The GCP region
 * **gcp_zone**: The GCP zone
-* **gcp_oauth_client_id**: The OAuth Client ID you generated earlier
-* **gcp_oauth_client_secret**: The OAuth Client Secret you generated earlier
 * **gcp_cluster_node_count**: How many nodes should be included in the load test cluster
 * **gcp_cluster_machine_type**: What compute instance machine type should be used? (Almost certainly a C2 type instance)
 * **looker_user**: The username of the Looker instance you are testing
 * **looker_pass**: The password of the Looker instance you are testing
 
+If you wish to use the optional IAP setup, then the folliwng entries are required as well:
+
+* **loadtest_dns_domain**: The DNS domain/subdomain name
+* **gcp_oauth_client_id**: The OAuth Client ID you generated earlier
+* **gcp_oauth_client_secret**: The OAuth Client Secret you generated earlier
 Your config may look something like this:
 
 ```
 {
   "loadtest_name": "my-gke-load-test-name",
-  "loadtest_dns_domain": "loadtest.company.com",
   "loadtest_worker_count": 5,
   "gcp_project_id": "my-gcp-project-name",
   "gcp_region": "us-central1",
   "gcp_zone": "us-central1-c",
-  "gcp_oauth_client_id": "abc123xyz.apps.googleusercontent.com",
-  "gcp_oauth_client_secret": "foobarbaz",
   "gcp_cluster_node_count": 3,
   "gcp_cluster_machine_type": "c2-standard-8",
   "looker_user": "me@company.com",
-  "looker_pass": "abc_123_xyz"
+  "looker_pass": "abc_123_xyz",
+  "loadtest_dns_domain": "loadtest.company.com",
+  "gcp_oauth_client_id": "abc123xyz.apps.googleusercontent.com",
+  "gcp_oauth_client_secret": "foobarbaz"
 }
 ```
 

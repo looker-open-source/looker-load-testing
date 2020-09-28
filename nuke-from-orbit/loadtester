@@ -117,15 +117,15 @@ gke_loadtest_cluster_ip_destroy_gcloud() {
 }
 
 # Parse kubernetes jinja templates into proper config files
-parse_config() {
+render_kube_templates() {
   echo "Cleaning out any old configs"
   rm -f ${script_dir}/kubernetes-config/*.yaml
-  echo "Parsing kubernetes config templates"
-  if [[ -z $setup_command ]]
+  echo "Rendering kubernetes yaml templates"
+  if [[ -z $setup_subcommand ]]
   then
-    python ${script_dir}/kubernetes-config/parse_kube_templates.py --only-user-config --image-tag $image_tag
+    python ${script_dir}/kubernetes-config/render_kube_templates.py --only-user-config --image-name $image_to_deploy
   else
-    python ${script_dir}/kubernetes-config/parse_kube_templates.py --image-tag $image_tag
+    python ${script_dir}/kubernetes-config/render_kube_templates.py --image-name $image_to_deploy
   fi
 }
 
@@ -136,8 +136,9 @@ provision_looker() {
   echo "Provisioning attempt complete."
 }
 
-# Parse relevant config file to set needed variables
+# Parse config file to set needed variables
 set_variables() {
+  echo "Reading config file: $config_file"
   gcp_project_id=$(cat $config_file | jq -r '.gcp_project_id // empty' | tr -d '[:space:]')
   loadtest_name=$(cat $config_file | jq -r '.loadtest_name // empty' | tr -d '[:space:]')
   loadtest_dns_domain=$(cat $config_file | jq -r '.loadtest_dns_domain // empty' | tr -d '[:space:]')
@@ -161,16 +162,26 @@ set_variables() {
   error=''
   warning=''
 
-  if [[ -z $gcp_oauth_client_id ]]; then error+="gcp_oauth_client_id,"; fi
-  if [[ -z $gcp_oauth_client_secret ]]; then error+="gcp_oauth_client_secret,"; fi
+  if ! [[ -z $loadtest_dns_domain ]]
+  then
+    with_iap=true
+    printf "\n${YELLOW}loadtest_dns_domain is set; assuming a setup with IAP.${NC}\n"
+    if [[ -z $gcp_oauth_client_id ]]; then error+="gcp_oauth_client_id,"; fi
+    if [[ -z $gcp_oauth_client_secret ]]; then error+="gcp_oauth_client_secret,"; fi
+    if [[ -z $loadtest_dns_domain ]]; then error+="loadtest_dns_domain,"; fi
+    if [[ -z $gcp_iap_email ]]; then error+="gcp_iap_email,"; fi
+  else
+    with_iap=false
+  fi
 
-  if ! [[ $setup_command == 'self-contained' ]]
+  echo "debug: with_iap = $with_iap"
+
+  if ! [[ $setup_subcommand == 'self-contained' ]]
   then
     if [[ -z $gcp_project_id ]]; then error+="gcp_project_id,"; fi
     if [[ -z $loadtest_name ]]; then error+="loadtest_name,"; fi
     if [[ -z $loadtest_step_load ]]; then error+="loadtest_step_load,"; fi
     if [[ -z $loadtest_worker_count ]]; then error+="loadtest_worker_count,"; fi
-    if [[ -z $loadtest_dns_domain ]]; then error+="loadtest_dns_domain,"; fi
     if [[ -z $gcp_zone ]]; then error+="gcp_zone,"; fi
     if [[ -z $gcp_cluster_node_count ]]; then error+="gcp_cluster_node_count,"; fi
     if [[ -z $gcp_cluster_machine_type ]]; then error+="gcp_cluster_machine_type,"; fi
@@ -183,7 +194,6 @@ set_variables() {
     if [[ -z $aws_secret_key ]]; then error+="aws_secret_key,"; fi
     if [[ -z $aws_session_token ]]; then warning+="aws_session_token,"; fi
     if [[ -z $lookml_project_repo ]]; then error+="lookml_project_repo,"; fi
-    if [[ -z $gcp_iap_email ]]; then error+="gcp_iap_email,"; fi
   fi
 
   if [[ $warning != '' ]]
@@ -202,7 +212,10 @@ set_variables() {
 
 # Build (or rebuild) the load test image
 build_loadtest_image() {
-  gcloud builds submit --tag gcr.io/${gcp_project_id}/${loadtest_name}:${image_tag} docker-image/.
+  local target_name=gcr.io/${gcp_project_id}/${loadtest_name}:${image_tag}
+  gcloud builds submit --tag $target_name docker-image/.
+  image_to_deploy=$target_name
+  printf "\n${YELLOW}Built new image: ${image_to_deploy}${NC}\n"
 }
 
 # Configure access to kubernetes cluster via gcloud
@@ -321,6 +334,24 @@ check_worker_count() {
   fi
 }
 
+# See if this test name has been used in this project already
+# If so, we'll get the image name of the most recently finished successful build
+get_most_recent_image() {
+  local target_name="gcr.io/${gcp_project_id}/${loadtest_name}"
+  echo "Searching for existing images named: $target_name"
+  local most_recent_digest=$(
+    gcloud container images list-tags $target_name --format=json \
+    | jq -r '[ .[] | {digest: .digest, timestamp: .timestamp.datetime} ] | sort_by(.timestamp) | .[-1].digest // empty' \
+  )
+  if ! [[ -z $most_recent_digest ]]
+  then
+    image_to_deploy=$target_name@$most_recent_digest
+    printf "\n${YELLOW}Found existing image: ${image_to_deploy}${NC}\n"
+  else
+    printf "\n${YELLOW}Didn't find image${NC}\n"
+  fi
+}
+
 # Compares update tag to original tag
 compare_tags() {
   current_tag=$(kubectl get deployment lw-pod -o json | jq -r '.spec.template.spec.containers[0].image' | cut -f 2 -d ':')
@@ -350,13 +381,14 @@ self_contained_setup() {
   read confirm
   if [[ $confirm == 'yes' ]]
   then
+    #TODO: this sequence still assumes IAP always; update it to check
     echo -n "self-contained" > ${script_dir}/.deploy_type
     config_file=${script_dir}/.self_contained_params.json
     self_contained_requirements_check
     gke_cluster_deploy
     loadtest_dns_deploy
     looker_deploy
-    parse_config
+    render_kube_templates
     set_variables
     build_loadtest_image
     get_kubernetes_creds
@@ -377,6 +409,7 @@ self_contained_setup() {
   fi
 }
 
+# Regular setup
 external_setup() {
   echo "External setup triggered"
   echo -n "external" > ${script_dir}/.deploy_type
@@ -384,33 +417,62 @@ external_setup() {
   set_variables
   check_worker_count
   gke_loadtest_cluster_gcloud
-  gke_loadtest_cluster_ip_gcloud
-  parse_config
-  build_loadtest_image
+  get_most_recent_image
+  if [[ -z $image_to_deploy ]]
+  then
+    image_tag="v1"
+    build_loadtest_image
+  fi
+  render_kube_templates
   get_kubernetes_creds
-  set_oauth_secret
   set_looker_secret
   set_looker_api_secret
-  deploy_managed_certificate
   deploy_backend_config
   deploy_locust
-  deploy_ingress
-  printf "\n${GREEN}Cluster IP address is ${loadtest_ip_address}. Please create an A Record in your DNS provider for *.${loadtest_dns_domain} that points to ${loadtest_ip_address}.${NC}\n"
+  if [ "$with_iap" = true ]
+  then
+    gke_loadtest_cluster_ip_gcloud
+    set_oauth_secret
+    deploy_managed_certificate
+    deploy_ingress
+    printf "\n${GREEN}Cluster IP address is ${loadtest_ip_address}. Please create an A Record in your DNS provider for *.${loadtest_dns_domain} that points to ${loadtest_ip_address}.${NC}\n"
+  else
+    printf "\n${GREEN}Run these in new terminal windows:${NC}\n"
+    printf "\n    ${GREEN}kubectl port-forward service/lm-pod 8880:80${NC}\n"
+    printf "\n    ${GREEN}kubectl port-forward service/le-pod 8881:80${NC}\n"
+    printf "\n${GREEN}Then visit localhost:8880 and localhost:8881 in your web browser.${NC}\n"
+  fi
 }
 
 teardown() {
   deploy_type=$(cat ${script_dir}/.deploy_type)
+  echo "debug: deploy_type = $deploy_type"
   if [[ $deploy_type == 'self-contained' ]]
   then
-    looker_destroy
-    loadtest_dns_destroy
-    gke_cluster_destroy
+    teardown_self_contained
   else
-    config_file=${script_dir}/config.json
-    set_variables
-    gke_loadtest_cluster_destroy_gcloud
+    teardown_external
+  fi
+}
+
+teardown_self_contained() {
+  #TODO: this doesn't account for with_iap yet
+  looker_destroy
+  loadtest_dns_destroy
+  gke_cluster_destroy
+  printf "\n${YELLOW}Please delete the A Record for *.${loadtest_dns_domain} from your DNS provider!${NC}\n"
+}
+
+teardown_external() {
+  config_file=${script_dir}/config.json
+  set_variables
+  gke_loadtest_cluster_destroy_gcloud
+  if [ "$with_iap" = true ]
+  then
     gke_loadtest_cluster_ip_destroy_gcloud
     printf "\n${YELLOW}Please delete the A Record for *.${loadtest_dns_domain} from your DNS provider!${NC}\n"
+  else
+    printf "\n${YELLOW}Cluster has been destroyed. Port forwarding sessions will automatically terminate; you can close those tabs.${NC}\n"
   fi
 }
 
@@ -419,19 +481,25 @@ update_test() {
   compare_tags
   set_variables
   check_worker_count
-  parse_config
   spin_down_locust
   build_loadtest_image
+  render_kube_templates
   set_looker_secret
   set_looker_api_secret
   deploy_locust
 }
 
 update_config() {
+  image_name=$(kubectl get deployment lw-pod -o json | jq -r '.spec.template.spec.containers[0].image')
+  if [[ -z image_name ]]
+  then
+    echo "Couldn't get the current loadtest image name. Check that the cluster is set up correctly."
+    exit 1
+  fi
   config_file=${script_dir}/config.json
   set_variables
   check_worker_count
-  parse_config
+  render_kube_templates
   spin_down_locust
   set_looker_secret
   set_looker_api_secret
@@ -446,64 +514,64 @@ print_help() {
   echo "    loadtester teardown                       Tears down the load tester."
 }
 
-# Parse command input
+# **** Begin main script **** #
+
 universal_requirements_check
+
 while getopts ":h" opt; do
   case ${opt} in
     h )
       print_help
-      ;;
+    ;;
     \? )
       echo "Invalid Option: -$OPTARG" 1>&2
       exit 1
-      ;;
+    ;;
     : )
       print_help
       exit 1
-      ;;
+    ;;
   esac
 done
 shift $((OPTIND -1))
 
-subcommand=$1; shift
-case "$subcommand" in
+main_command=$1; shift
+case "$main_command" in
   setup)
-    setup_command=$1; shift
-    image_tag='v1'
-    if ! [[ -z $setup_command ]]
+    setup_subcommand=$1; shift
+    if [[ -z $setup_subcommand ]]
     then
-      case "$setup_command" in
-        self-contained)
-          self_contained_setup
-          ;;
-        *)
-          echo "Invalid Option: $setup_command" 1>&2
-          print_help
-          exit 1
-          ;;
-      esac
-    else
       echo "debug: in external_setup"
       external_setup
-    fi
-    ;;
-  update)
-    update_command=$1; shift
-    case "$update_command" in
-      config)
-        image_tag=$(kubectl get deployment lw-pod -o json | jq -r '.spec.template.spec.containers[0].image' | cut -f 2 -d ':')
-        update_config
+    else
+      case "$setup_subcommand" in
+        self-contained)
+          self_contained_setup
         ;;
+        *)
+          echo "Invalid Option: $setup_subcommand" 1>&2
+          print_help
+          exit 1
+        ;;
+      esac
+    fi
+  ;;
+  update)
+    update_subcommand=$1; shift
+    case "$update_subcommand" in
+      config)
+        update_config
+      ;;
       test)
         while getopts ":t:" opt; do
           case ${opt} in
             t)
               image_tag=$OPTARG
-              ;;
+            ;;
             \?)
               echo "Invalid Option: -$OPTARG" 1>&2
               exit 1
-              ;;
+            ;;
           esac
         done
         shift $((OPTIND -1))
@@ -515,21 +583,21 @@ case "$subcommand" in
           print_help
           exit 1
         fi
-        ;;
+      ;;
       *)
-        echo "Invalid Option: $update_command" 1>&2
+        echo "Invalid Option: $update_subcommand" 1>&2
         exit 1
-        ;;
+      ;;
     esac
-    ;;
+  ;;
   teardown)
     teardown
-    ;;
+  ;;
   *)
-    echo "Invalid Option: $subcommand" 1>&2
+    echo "Invalid Option: $main_command" 1>&2
     print_help
     exit 1
-    ;;
+  ;;
   esac
 
 exit 0

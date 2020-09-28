@@ -77,7 +77,7 @@ def render_kubernetes_templates(values_dict, files):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--only-user-config", action="store_true", help="Only parse user config")
-    parser.add_argument("--image-tag", default="latest", help="Tag to use for locust test image")
+    parser.add_argument("--image-name", help="Full name of test container image to deploy")
     args = parser.parse_args()
 
     if args.only_user_config:
@@ -90,7 +90,7 @@ def main():
         ]
         values_dict = {}
         user_dict = add_user_params(values_dict)
-        user_dict["image_tag"] = args.image_tag
+        user_dict["image_name"] = args.image_name
         user_dict["external"] = True
         render_kubernetes_templates(user_dict, files)
     else:
@@ -98,7 +98,7 @@ def main():
         values_dict = combine_tf_outputs()
         aws_dict = add_aws_creds(values_dict)
         combined_dict = add_user_params(aws_dict)
-        combined_dict["image_tag"] = args.image_tag
+        combined_dict["image_name"] = args.image_name
         export_params(combined_dict)
         render_kubernetes_templates(combined_dict, files)
 

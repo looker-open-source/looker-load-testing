@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: lw-prod
-          image: gcr.io/{{gcp_project_id}}/{{loadtest_name}}:{{image_tag}}
+          image: {{image_name}}
           resources:
             requests:
               memory: "2Gi"
