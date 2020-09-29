@@ -1,0 +1,14 @@
+---
+apiVersion: networking.gke.io/v1beta2
+kind: ManagedCertificate
+metadata:
+  name: loadtest-cert
+spec:
+  domains:
+    - locust.{{loadtest_dns_domain}}
+    {% if external -%}
+    - locust-metrics.{{loadtest_dns_domain}}
+    {% else -%}
+    - prometheus.{{loadtest_dns_domain}}
+    - grafana.{{loadtest_dns_domain}}
+    {% endif %}

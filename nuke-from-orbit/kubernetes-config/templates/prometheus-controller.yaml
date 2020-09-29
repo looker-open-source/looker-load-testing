@@ -1,0 +1,62 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  annotations:
+    beta.cloud.google.com/backend-config: '{"default": "config-default"}'
+  name: prom-pod
+  labels:
+    app: prom-pod
+spec:
+  ports:
+    - port: 80
+      targetPort: loc-prom-web
+      protocol: TCP
+      name: loc-prom-web
+  selector:
+    app: prom-pod
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prom-pod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prom-pod
+  template:
+    metadata:
+      labels:
+        app: prom-pod
+    spec:
+      containers:
+        - name: prom-pod
+          image: prom/prometheus:v2.19.1
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.path=/prometheus/"
+          ports:
+            - name: loc-prom-web
+              containerPort: 9090
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /graph
+              port: loc-prom-web
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: prometheus-config-volume
+              mountPath: /etc/prometheus/
+            - name: prometheus-storage-volume
+              mountPath: /prometheus/
+      volumes:
+        - name: prometheus-config-volume
+          configMap:
+            defaultMode: 420
+            name: prom-conf
+
+        - name: prometheus-storage-volume
+          emptyDir: {}

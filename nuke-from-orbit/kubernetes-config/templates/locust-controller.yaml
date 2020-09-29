@@ -1,0 +1,136 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  annotations:
+    beta.cloud.google.com/backend-config: '{"default": "config-default"}'
+  name: lm-pod
+  labels:
+    app: lm-pod
+spec:
+  ports:
+    - port: 80
+      targetPort: loc-master-web
+      protocol: TCP
+      name: loc-master-web
+    - port: 5557
+      targetPort: loc-master-p1
+      protocol: TCP
+      name: loc-master-p1
+    - port: 5558
+      targetPort: loc-master-p2
+      protocol: TCP
+      name: loc-master-p2
+  selector:
+    app: lm-pod
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: "Deployment"
+metadata:
+  name: lm-pod
+  labels:
+    name: lm-pod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lm-pod
+  template:
+    metadata:
+      labels:
+        app: lm-pod
+    spec:
+      containers:
+        - name: lm-pod
+          image: gcr.io/{{gcp_project_id}}/{{loadtest_name}}:{{image_tag}}
+          resources:
+            requests:
+              memory: "500Mi"
+              cpu: "50m"
+            limits:
+              memory: "1Gi"
+              cpu: "100m"
+          env:
+            - name: LOCUST_MODE
+              value: master
+            - name: TARGET_HOST
+              value: dashboard
+            - name: LOCUST_STEP
+              value: "{{loadtest_step_load}}"
+            - name: USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: website-creds
+                  key: username
+                  optional: true
+            - name: PASS
+              valueFrom:
+                secretKeyRef:
+                  name: website-creds
+                  key: password
+                  optional: true
+            - name: CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: api-creds
+                  key: client_id
+                  optional: true
+            - name: CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: api-creds
+                  key: client_secret
+                  optional: true
+          ports:
+            - name: loc-master-web
+              containerPort: 8089
+              protocol: TCP
+            - name: loc-master-p1
+              containerPort: 5557
+              protocol: TCP
+            - name: loc-master-p2
+              containerPort: 5558
+              protocol: TCP
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: le-pod
+  labels:
+    app: le-pod
+spec:
+  ports:
+    - port: 80
+      targetPort: loc-metrics-web
+      protocol: TCP
+  selector:
+    app: le-pod
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: "Deployment"
+metadata:
+  name: le-pod
+  labels:
+    name: le-pod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: le-pod
+  template:
+    metadata:
+      labels:
+        app: le-pod
+    spec:
+      containers:
+        - name: le-pod
+          image: containersol/locust_exporter:v0.3.0
+          env:
+            - name: LOCUST_EXPORTER_URI
+              value: http://lm-pod:80
+          ports:
+            - name: loc-metrics-web
+              containerPort: 9646
+              protocol: TCP

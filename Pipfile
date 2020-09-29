@@ -5,11 +5,24 @@ verify_ssl = true
 
 [dev-packages]
 ipython = "*"
+flake8 = "*"
 
 [packages]
 selenium = "*"
-locust = "*"
 realbrowserlocusts = "*"
+locustio = "==0.14.6"
+looker-sdk = "*"
+requests = "*"
+beautifulsoup4 = "*"
+jinja2 = "*"
+gitpython = "*"
+fabric = "*"
+backoff-utils = "*"
+kubernetes = "*"
+looker-deployer = "*"
 
 [requires]
 python_version = "3.7"
+
+[pipenv]
+allow_prereleases = true

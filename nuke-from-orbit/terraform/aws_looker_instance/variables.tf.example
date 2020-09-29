@@ -1,0 +1,53 @@
+### Important! ###
+# You must fill in the form at https://download.looker.com/validate to validate your license key and accept the EULA before running this script
+variable "looker_license_key" {
+  default = "abc123" # your Looker license key
+}
+
+variable "technical_contact_email" {
+  default = "example@foo.com" # your organization's technical contact for Looker
+}
+
+variable "tag_email" {
+  default = "example@foo.com"
+}
+
+variable "aws_region" {
+  default = "us-east-1"
+}
+
+variable "external_db" {
+  default = 1
+}
+
+variable "db_instance_type" {
+  default = "db.t2.medium"
+}
+
+variable "final_snapshot_skip" {
+  default = "true"
+}
+
+variable "instances" {
+  default = 1
+}
+
+variable "ec2_instance_type" {
+  default = "t2.large"
+}
+
+variable "provisioning_script" {
+  default = "setup.sh"
+}
+
+variable "key" {
+  default = "your_ssh_key"
+}
+
+variable "domain" {
+  default = "yourdomain.com"
+}
+
+variable "env" {
+  default = "mydev"
+}

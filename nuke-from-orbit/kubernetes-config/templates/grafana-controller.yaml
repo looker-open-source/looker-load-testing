@@ -1,0 +1,77 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  annotations:
+    beta.cloud.google.com/backend-config: '{"default": "config-default"}'
+  name: grafana
+  labels:
+    app: grafana
+spec:
+  ports:
+    - port: 80
+      targetPort: loc-grafana-web
+      protocol: TCP
+      name: loc-grafana-web
+  selector:
+    app: grafana
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: "Deployment"
+metadata:
+  labels:
+    app: grafana
+  name: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - image: grafana/grafana:7.1.0
+          name: grafana
+          ports:
+            - containerPort: 3000
+              name: loc-grafana-web
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /
+              port: loc-grafana-web
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: grafana-config-provision
+              mountPath: /etc/grafana
+            - name: grafana-datasource-provision
+              mountPath: /etc/grafana/provisioning/datasources
+            - name: grafana-dashboard-provision
+              mountPath: /etc/grafana/provisioning/dashboards
+            - name: grafana-dashboard-json
+              mountPath: /var/lib/grafana/dashboards
+      volumes:
+        - name: grafana-config-provision
+          configMap:
+            defaultMode: 420
+            name: grafana-config
+
+        - name: grafana-datasource-provision
+          configMap:
+            defaultMode: 420
+            name: grafana-datasource-conf
+
+        - name: grafana-dashboard-provision
+          configMap:
+            defaultMode: 420
+            name: grafana-dashboard-prov-conf
+
+        - name: grafana-dashboard-json
+          configMap:
+            defaultMode: 420
+            name: grafana-dashboard-json-conf

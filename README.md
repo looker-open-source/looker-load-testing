@@ -18,13 +18,17 @@ The Pipfile and locustfile in this directory can be used for local testing. Inst
 Then, modify `locustfile.py` to match your testing criteria. Some things you will want to change are the `SITE` and
 `DASH_ID` global variables and the `timeout` and `wait_time` arguments in the `LocustUser` class.
 
-This local version expects a `looker.ini` file to be present in this directory. This file is used to store Looker
-credentials. The section name should be the same as the SITE without the 'https://'. For example:
+This local version expects two environment variables to be present:
+
+1. USERNAME - this is the email you use to log into your Looker instance.
+2. PASS - this is the password you use to log into your looker instance.
+
+I recommend setting up a .env file that contains these values - pipenv will then automatically load them when you
+execute a `pipenv run` or `pipenv shell` command. A sample .env file would look like this:
 
 ```
-[jcp-dev.lookersandbox.com]
-username=name@company.com
-password=abc123
+USERNAME=foo@company.com
+PASS=abcxyz
 ```
 
 When your `locustfile.py` and `looker.ini` files are in order, kick off the test by invoking `locust` from the command
@@ -39,9 +43,10 @@ lifting, but we've had to modify it to work in a distributed containerized forma
 over time.
 
 Additionally, to accurately time how long a Looker dashboard takes to load is not very straightforward. The best method
-comes from listening for a Javascript event Looker emits once dashboards are loaded (`dashboard.rendered`) but Selenium
-by default can't wait for JS events. We've solved the problem by executing an eventlistener in JS that then appends an
+comes from listening for a Javascript event Looker emits once dashboards are loaded (`rendered`) but Selenium
+by default can't wait for JS events. We've solved the problem by executing a `awaitPerformanceObservation` in JS that then appends an
 empty div to the DOM.
 
-It all works but rarely the event fires before the JS script runs. In these cases the listener will time out. This will
-appear as an outlier in the final load test report.
+This works as expected but there is some additional time taken by Selenium and Locust to append the empty div and
+register the time. This means the reported dashbard render time may be a couple of milliseconds greater than the actual
+render time.
