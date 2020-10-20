@@ -205,13 +205,6 @@ Navigate to the nuke-from-orbit directory and kick off the deployment!
 For the purposes of an example, let’s say the `load_test_dns_domain` parameter in your `config.json` was set to `my-loadtest.company.com`. Once everything has some time to bake
 you will be able to access your load tester at `https://locust.my-loadtest.company.com`. This will be where you kick off load tests. It also has some graphs and metrics available.
 
-### Scaling
-
-Scaling up the number of simulated users will require an increase in the number of Locust
-worker pods. To increase the number of pods deployed by the deployment, Kubernetes offers the ability to resize
-deployments without redeploying them. For example, the following command scales the pool of Locust worker pods to 20:
-
-        $ kubectl scale deployment/lw-pod --replicas=20
 
 ### Updating the test
 
@@ -219,7 +212,7 @@ Since the test script is a part of the container you build and deploy any update
 building and deploying a new container. This process has been automated with an `update` command. Make your required
 changes to the test script and then run the following command:
 
-    $ ./loadtester update <tag>
+    $ ./loadtester update test -t <tag>
 
 This will rebuild the container and execute the correct steps to update the kubernetes deployment. These changes will be
 available immediately upon completion of the command - no need to redeploy the ingress or wait for DNS this time around!
@@ -229,6 +222,25 @@ available immediately upon completion of the command - no need to redeploy the i
 > tag of 'v1' so one good option is to simply increment the number, e.g. 'v2', 'v3', etc. The exception to this rule is
 > using the 'latest' tag which will always be accepted and automatically trigger a rebuild, per Docker and Kubernetes
 > convention.
+
+### Updating the config
+
+If your updates involve changes to just the config you can make use of the following command:
+
+    $ ./loadtester update config
+
+This will redeploy the master/worker deployments with the updated config - this is even faster than the test update
+command since there's no need to build a new container image!
+
+### Scaling
+
+Scaling up the number of simulated users will require an increase in the number of Locust
+worker pods. To increase the number of pods deployed by the deployment, Kubernetes offers the ability to resize
+deployments without redeploying them. This can be done by editing the `loadtest_worker_count` field in the config
+file and triggering a config update (see above). You can also make use of imperitive `kubectl` commands. For
+example, the following command scales the pool of Locust worker pods to 20:
+
+        $ kubectl scale deployment/lw-pod --replicas=20
 
 ### Monitoring
 
