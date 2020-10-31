@@ -124,10 +124,8 @@ parse_config() {
   echo "Parsing kubernetes config templates"
   if [[ -z $setup_command || $setup_command == "external" ]]
   then
-    echo "all is well"
     python ${script_dir}/kubernetes-config/parse_kube_templates.py --only-user-config --image-tag $image_tag
   else
-    echo "uh oh"
     python ${script_dir}/kubernetes-config/parse_kube_templates.py --image-tag $image_tag
   fi
 }
