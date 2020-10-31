@@ -122,7 +122,7 @@ parse_config() {
   echo "Cleaning out any old configs"
   rm -f ${script_dir}/kubernetes-config/*.yaml
   echo "Parsing kubernetes config templates"
-  if [[ -z $setup_command ]]
+  if [[ -z $setup_command || $setup_command == "external" ]]
   then
     python ${script_dir}/kubernetes-config/parse_kube_templates.py --only-user-config --image-tag $image_tag
   else
@@ -299,6 +299,7 @@ deploy_locust() {
   kubectl apply -f ${config_dir}/locust-controller.yaml
   kubectl rollout status deployment/lm-pod
   kubectl apply -f ${config_dir}/locust-worker-controller.yaml
+  kubectl rollout status deployment/lw-pod
 }
 
 # Self-contained only: deploy cloudwatch monitoring stack
@@ -370,6 +371,31 @@ spin_down_locust() {
   kubectl delete deployment lm-pod
 }
 
+forward_ports() {
+  lsof -t -i:8089 -s TCP:LISTEN
+  if [[ $? -eq 1 ]]
+  then
+    kubectl port-forward service/lm-pod 8089:loc-master-web > /dev/null 2>&1 &
+    sleep 1
+    lsof -t -i:8089 -s TCP:LISTEN > ${script_dir}/.port_forward_pid
+    printf "\n${GREEN}Ports forwarded! Locust is available on port 8089.${NC}\n"
+  else
+    printf "\n${RED}Ports are already in use! Please free up port 8089 and run './loadtester update forward_ports'.${NC}\n"
+  fi
+}
+
+kill_port_forward_pid() {
+  lsof -t -i:8089 -s TCP:LISTEN
+  if [[ $? -eq 0 ]]
+  then
+    kill -9 $(lsof -t -i:8089 -s TCP:LISTEN)
+    rm ${script_dir}/.port_forward_pid
+    printf "\n${GREEN}Process killed successfully.${NC}\n"
+  else
+    printf "\n${YELLOW}Nothing killed: No processes found for port 8089.${NC}\n"
+  fi
+}
+
 # Define aggregate functions
 self_contained_setup() {
   echo "Self contained setup triggered"
@@ -425,23 +451,61 @@ external_setup() {
   printf "\n${GREEN}Cluster IP address is ${loadtest_ip_address}. Please create an A Record in your DNS provider for *.${loadtest_dns_domain} that points to ${loadtest_ip_address}.${NC}\n"
 }
 
+port_forward_setup() {
+  echo "Port-forward setup triggered"
+  echo -n "port_forward" > ${script_dir}/.deploy_type
+  config_file=${script_dir}/config.json
+  set_variables
+  check_worker_count
+  gke_loadtest_cluster_gcloud
+  parse_config
+  build_loadtest_image
+  get_kubernetes_creds
+  set_looker_secret
+  set_looker_api_secret
+  deploy_locust
+  forward_ports
+}
+
 teardown() {
   deploy_type=$(cat ${script_dir}/.deploy_type)
   if [[ $deploy_type == 'self-contained' ]]
   then
+    if [[ -f ${script_dir}/.port_forward_pid ]]
+    then
+      kill_port_forward_pid
+    fi
     looker_destroy
     loadtest_dns_destroy
     gke_cluster_destroy
-  else
+  elif [[ $deploy_type == 'external' ]]
+  then
     config_file=${script_dir}/config.json
     set_variables
+    if [[ -f ${script_dir}/.port_forward_pid ]]
+    then
+      kill_port_forward_pid
+    fi
     gke_loadtest_cluster_destroy_gcloud
     gke_loadtest_cluster_ip_destroy_gcloud
     printf "\n${YELLOW}Please delete the A Record for *.${loadtest_dns_domain} from your DNS provider!${NC}\n"
+  else
+    config_file=${script_dir}/config.json
+    set_variables
+    kill_port_forward_pid
+    gke_loadtest_cluster_destroy_gcloud
   fi
 }
 
 update_test() {
+  if [[ -f ${script_dir}/.port_forward_pid  ]]
+  then
+    pf_flag=1
+    kill_port_forward_pid
+    sleep 5
+  else
+    pf_flag=0
+  fi
   config_file=${script_dir}/config.json
   compare_tags
   set_variables
@@ -452,9 +516,22 @@ update_test() {
   set_looker_secret
   set_looker_api_secret
   deploy_locust
+  if [[ $pf_flag -eq 1 ]]
+  then
+    sleep 5
+    forward_ports
+  fi
 }
 
 update_config() {
+  if [[ -f ${script_dir}/.port_forward_pid  ]]
+  then
+    pf_flag=1
+    kill_port_forward_pid
+    sleep 1
+  else
+    pf_flag=0
+  fi
   config_file=${script_dir}/config.json
   set_variables
   check_worker_count
@@ -463,15 +540,24 @@ update_config() {
   set_looker_secret
   set_looker_api_secret
   deploy_locust
+  if [[ $pf_flag -eq 1 ]]
+  then
+    sleep 1
+    forward_ports
+  fi
 }
 
 print_help() {
   echo "Usage:"
-  echo "    loadtester -h                             Display this help message."
-  echo "    loadtester -v                             Display the version of the tool and exit."
-  echo "    loadtester setup [self-contained]         Sets up the load tester. If self-contained is specified attempts advanced self-contained mode (not recommended)."
-  echo "    loadtester update test -t <tag>|config  Updates either the test script or config. Updating the test will rebuild the containers versioned on the provided tag."
-  echo "    loadtester teardown                       Tears down the load tester."
+  echo "    loadtester -h                                      Display this help message."
+  echo "    loadtester -v                                      Display the version of the tool and exit."
+  echo "    loadtester setup                                   Sets up the load tester. This default option forwards cluster ports for quick local access."
+  echo "    loadtester setup external                          Sets up the load tester. This version will deploy the appropriate services to allow for secure access over the web."
+  echo "    loadtester setup self-contained                    Sets up the load tester. This version attempts advanced self-contained mode (not recommended for most users)."
+  echo "    loadtester update test -t <tag>                    Updates the test script. Updating the test will rebuild the containers versioned on the provided tag."
+  echo "    loadtester update config                           Updates the config. This will redeploy the containers but won't rebuild them. Note: this cannot be used to update the cluster itself."
+  echo "    loadtester update forward-ports [-k|-f]            This will forward the locust master port to make it accessible from your local machine on port 8089. The -k flag kills any existing process. The -f flag option will kill then forward the port."
+  echo "    loadtester teardown                                Tears down the load tester."
 }
 
 # Parse command input
@@ -507,6 +593,9 @@ case "$subcommand" in
         self-contained)
           self_contained_setup
           ;;
+        external)
+          external_setup
+          ;;
         *)
           echo "Invalid Option: $setup_command" 1>&2
           print_help
@@ -514,7 +603,7 @@ case "$subcommand" in
           ;;
       esac
     else
-      external_setup
+      port_forward_setup
     fi
     ;;
   update)
@@ -545,6 +634,28 @@ case "$subcommand" in
           print_help
           exit 1
         fi
+        ;;
+      forward-ports)
+        while getopts ":kf" opt; do
+          case ${opt} in
+            k)
+              kill_port_forward_pid
+              ;;
+            f)
+              kill_port_forward_pid
+              forward_ports
+              ;;
+            \?)
+              echo "Invalid Option: -$OPTARG" 1>&2
+              exit 1
+              ;;
+          esac
+        done
+        if [[ $OPTIND -eq 1 ]]
+        then
+          forward_ports
+        fi
+        shift $((OPTIND -1))
         ;;
       *)
         echo "Invalid Option: $update_command" 1>&2
