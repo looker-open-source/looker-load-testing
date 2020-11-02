@@ -13,7 +13,7 @@ the steps are:
 1. Build a Docker image of your locust tests
 2. Spin up a Kubernetes cluster
 3. Create the master and worker deployments, the service, and any related secrets
-4. Provide ingress, secured with HTTPS and some form of authentication (IAP in this case)
+4. Port forward the relevant port and/or provide ingress, secured with HTTPS and some form of authentication (IAP in this case)
 5. (Optional) Wire it up to a monitoring solution, like Grafana
 
 ## A note on scaling
@@ -36,8 +36,8 @@ on a dashboard this is equivalent to approximately 600 concurrent users.
 
 First, you will need access to GCP and have installed the [gcloud command line utility](https://cloud.google.com/sdk/install).
 
-You will need access to a unix-like system and a bash shell. OSX or Linux will work fine. Linux subsystem for Windows
-should also work, but I have not tested these instructions on Windows.
+You will need access to a Linux system and a bash shell. OSX could work but you would need to update your bash version
+to > 4.2. Linux subsystem for Windows should also work, but I have not tested these instructions on Windows.
 
 You will need a working version of python 3.7. I would recommend making use of [pyenv](https://github.com/pyenv/pyenv) to manage your Python
 installations. You will also need [Pipenv](https://pipenv-fork.readthedocs.io/en/latest/) to manage the virtual environment and the required library installation.
@@ -65,6 +65,8 @@ assets of course)
         * Select JSON key and a credentials json file will be downloaded to your system.
 
 > ⚠ **WARNING: This file should be considered sensitive and should be secured appropriately.**
+
+> **Note:** These next steps are only required if you plan on using External Mode to access the load tester via the web
 
 3. Assign IAP WebApp User Permissions to yourself:
     * Navigate to IAM-Admin -> IAM
@@ -151,8 +153,8 @@ Navigate to the nuke-from-orbit directory and create a json file called ‘confi
 * **gcp_project_id**: The project ID of your GCP project
 * **gcp_region**: The GCP region
 * **gcp_zone**: The GCP zone
-* **gcp_oauth_client_id**: The OAuth Client ID you generated earlier
-* **gcp_oauth_client_secret**: The OAuth Client Secret you generated earlier
+* **gcp_oauth_client_id**: (External Mode) The OAuth Client ID you generated earlier
+* **gcp_oauth_client_secret**: (External Mode) The OAuth Client Secret you generated earlier
 * **gcp_cluster_node_count**: How many nodes should be included in the load test cluster
 * **gcp_cluster_machine_type**: What compute instance machine type should be used? (Almost certainly a C2 type instance)
 * **looker_user**: (Optional) The username of the Looker instance you are testing
@@ -195,15 +197,16 @@ Navigate to the nuke-from-orbit directory and kick off the deployment!
     $ ./loadtester setup
 
 
-> ★ Tip: The script will take around 5 minutes to complete depending on what kind of instances it’s creating. It also takes a distressingly long time for the GCP Managed Cert to provision (like… 15-20 minutes or so)
+> ★ Tip: The script will take around 5 minutes to complete depending on what kind of instances it’s creating.
 
-3. The final output will provide additional instructions for how to set up your DNS entry to allow for access to the
-   load tester. Set up an A Record for the wildcard domain to the specified IP address.
+3. The script should end with it performing a port-forward to make the locust UI available on localhost:8089. Navigate
+   there in a browser and you should be ready to begin!
+
 
 ### Accessing the Load Tester
 
-For the purposes of an example, let’s say the `load_test_dns_domain` parameter in your `config.json` was set to `my-loadtest.company.com`. Once everything has some time to bake
-you will be able to access your load tester at `https://locust.my-loadtest.company.com`. This will be where you kick off load tests. It also has some graphs and metrics available.
+The UI should be available via browser at localhost:8089
+
 
 
 ### Updating the test
@@ -231,6 +234,44 @@ If your updates involve changes to just the config you can make use of the follo
 
 This will redeploy the master/worker deployments with the updated config - this is even faster than the test update
 command since there's no need to build a new container image!
+
+### Updating the port-forwarding
+
+Should you need to refresh your port-forwarding you can make use of the following command:
+
+    $ ./loadtester update forward-ports
+
+There are two flags you can add:
+
+    $ ./loadtester update forward-ports -k
+
+This will kill any process that is using port 8089, freeing it up for use. This can be handy if you receive any errors
+during setup about port 8089 being in use.
+
+    $ ./loadtester update forward-ports -f
+
+This will "force" the port forwarding - namely by running a kill command followed by a port-forward command.
+
+### Running in External Mode
+
+In addition to the standard port-forward mode, you can run the load tester in "External" mode which creates a secure
+route to the interface via the web. This can be useful is multiple people want to access the interface or if
+port-fowarding is not an option.
+
+First, make sure you've performed the setup steps required for External mode above.
+
+Run the following command:
+
+    $ ./loadtester setup external
+
+The final output will provide additional instructions for how to set up your DNS entry to allow for access to the
+load tester. Set up an A Record for the wildcard domain to the specified IP address.
+
+#### Accessing the UI via the web
+
+For the purposes of an example, let’s say the `load_test_dns_domain` parameter in your `config.json` was set to `my-loadtest.company.com`. Once everything has some time to bake
+you will be able to access your load tester at `https://locust.my-loadtest.company.com`.
+
 
 ### Scaling
 
