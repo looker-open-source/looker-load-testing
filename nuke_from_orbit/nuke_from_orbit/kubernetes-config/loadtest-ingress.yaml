@@ -1,0 +1,25 @@
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: loadtest-ingress
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: external-test
+    networking.gke.io/managed-certificates: loadtest-cert
+spec:
+  rules:
+    - host: locust.jcp-loadtest.lookersandbox.com
+      http:
+        paths:
+          - path: /*
+            backend:
+              serviceName: lm-pod
+              servicePort: 80
+    - host: locust-metrics.jcp-loadtest.lookersandbox.com
+      http:
+        paths:
+          - path: /*
+            backend:
+              serviceName: le-pod
+              servicePort: 80
+    

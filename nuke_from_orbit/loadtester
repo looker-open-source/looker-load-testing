@@ -591,10 +591,50 @@ case "$subcommand" in
     then
       case "$setup_command" in
         self-contained)
-          self_contained_setup
+          while getops ":f:" opt; do
+            case ${opt} in
+              f)
+                config_file=$OPTARG
+                ;;
+              *)
+                echo "Invalid Option -$OPTARG" 1>&2
+                print_help
+                exit 1
+                ;;
+            esac
+          done
+          shift $((OPTIND -1))
+          if ! [[ -z $config_file ]]
+          then
+            self_contained_setup
+          else
+            echo "Please provide a config file"
+            print_help
+            exit 1
+          fi
           ;;
         external)
-          external_setup
+          while getops ":f:" opt; do
+            case ${opt} in
+              f)
+                config_file=$OPTARG
+                ;;
+              *)
+                echo "Invalid Option -$OPTARG" 1>&2
+                print_help
+                exit 1
+                ;;
+            esac
+          done
+          shift $((OPTIND -1))
+          if ! [[ -z $config_file ]]
+          then
+            external_setup
+          else
+            echo "Please provide a config file"
+            print_help
+            exit 1
+          fi
           ;;
         *)
           echo "Invalid Option: $setup_command" 1>&2
@@ -603,7 +643,27 @@ case "$subcommand" in
           ;;
       esac
     else
-      port_forward_setup
+      while getops ":f:" opt; do
+        case ${opt} in
+          f)
+            config_file=$OPTARG
+            ;;
+          *)
+            echo "Invalid Option -$OPTARG" 1>&2
+            print_help
+            exit 1
+            ;;
+        esac
+      done
+      shift $((OPTIND -1))
+      if ! [[ -z $config_file ]]
+      then
+        port_forward_setup
+      else
+        echo "Please provide a config file"
+        print_help
+        exit 1
+      fi
     fi
     ;;
   update)

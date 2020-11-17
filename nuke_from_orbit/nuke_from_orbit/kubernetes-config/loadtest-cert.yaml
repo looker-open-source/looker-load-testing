@@ -1,0 +1,10 @@
+---
+apiVersion: networking.gke.io/v1beta2
+kind: ManagedCertificate
+metadata:
+  name: loadtest-cert
+spec:
+  domains:
+    - locust.jcp-loadtest.lookersandbox.com
+    - locust-metrics.jcp-loadtest.lookersandbox.com
+    

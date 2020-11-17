@@ -1,5 +1,5 @@
 import os
-from realbrowserlocusts import HeadlessChromeLocust
+from realbrowserlocusts import ChromeLocust
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
@@ -7,7 +7,7 @@ from locust import TaskSet, task, between
 
 
 SITE = "https://jcp-dev.lookersandbox.com"
-DASH_ID = 8
+DASH_ID = 1
 
 
 class LocustUserBehavior(TaskSet):
@@ -34,7 +34,7 @@ class LocustUserBehavior(TaskSet):
         self.client.find_element_by_id("login-submit").click()
 
     def logout(self):
-        print("stopping session")
+        self.client.close()
 
     def open_dashboard(self):
         script = """
@@ -65,7 +65,7 @@ class LocustUserBehavior(TaskSet):
         )
 
 
-class LocustUser(HeadlessChromeLocust):
+class LocustUser(ChromeLocust):
 
     host = "dashboard load test"
     timeout = 10  # in seconds in waitUntil thingies
