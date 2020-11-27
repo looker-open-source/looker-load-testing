@@ -22,6 +22,7 @@ google-cloud-storage = "^1.33.0"
 pytest = "^5.2"
 ipython = "*"
 flake8 = "*"
+pytest-mock = "^3.3.1"
 
 [tool.poetry.scripts]
 nuke = "nuke_from_orbit.cli:nuke"

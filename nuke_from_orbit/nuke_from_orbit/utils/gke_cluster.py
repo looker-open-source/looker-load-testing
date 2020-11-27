@@ -1,7 +1,9 @@
 from google.cloud import container_v1
+from jinja2 import Template
+from pathlib import Path
 
 
-def get_gke_client(credentials):
+def get_gke_client(credentials=None):
     client = container_v1.ClusterManagerClient(credentials=credentials)
 
     return client
@@ -49,3 +51,31 @@ def gke_task_status(name, project, zone, client):
     task_status = client.get_operation(request=request)
 
     return task_status
+
+
+def setup_cluster_auth_file(name, project, zone, client):
+    cluster_name = f"projects/{project}/locations/{zone}/clusters/{name}"
+    request = container_v1.types.GetClusterRequest(name=cluster_name)
+    cluster = client.get_cluster(request=request)
+
+    ca_cert = cluster.master_auth.cluster_ca_certificate
+    endpoint = cluster.endpoint
+
+    vals = {
+        "name": name,
+        "project": project,
+        "zone": zone,
+        "ca_cert": ca_cert,
+        "endpoint": endpoint
+    }
+
+    script_path = Path(__file__).parent
+    kubeconfig_template = script_path.joinpath("templates", "kubeconfig.yaml")
+    kubeconfig_rendered = script_path.joinpath("rendered", "kubeconfig.yaml")
+    template = kubeconfig_template.read_text()
+    rendered = Template(template).render(**vals)
+
+    with open(kubeconfig_rendered, "w") as f:
+        f.write(rendered)
+
+    return kubeconfig_rendered.resolve()
