@@ -35,6 +35,7 @@ class LocustUserBehavior(TaskSet):
 
     def logout(self):
         print("stopping session")
+        self.client.close()
 
     def open_dashboard(self):
         script = """

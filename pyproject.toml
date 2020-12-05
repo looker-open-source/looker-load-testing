@@ -17,6 +17,7 @@ kubernetes = "*"
 google-cloud-container = "^2.2.0"
 google-cloud-build = "^3.0.0"
 google-cloud-storage = "^1.33.0"
+google-api-python-client = "^1.12.8"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
