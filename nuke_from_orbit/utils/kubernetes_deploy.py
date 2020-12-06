@@ -11,6 +11,20 @@ def deploy_from_yaml(yaml_file, config_file, namespace="default"):
     utils.create_from_yaml(k8_client, yaml_file, namespace=namespace)
 
 
+def get_deployment(deployment_name, config_file, namespace="default"):
+    """Accepts a deployment name and returns the specified deployment object from kubernetes.
+    Can be used to extract relevant metadata such as the version tag.
+    """
+
+    config.load_kube_config(config_file=config_file)
+
+    with client.ApiClient() as api_client:
+        api_instance = client.AppsV1Api(api_client)
+        resp = api_instance.read_namespaced_deployment(deployment_name, namespace)
+
+    return resp
+
+
 def wait_for_deployment(deployment_name, config_file, namespace="default", timeout=60):
     """Polls for the status of a given deployment. When successful, a success message is
     printed and boolean True is returned. If deployment is not ready by the specified

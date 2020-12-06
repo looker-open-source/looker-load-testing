@@ -2,4 +2,5 @@ docker-compose.yml
 .env
 configs/*.yaml
 credentials/*.json
+locust_test_scripts/default_dashboard_loadtest.py
 nuke_from_orbit/utils/rendered/*.yaml

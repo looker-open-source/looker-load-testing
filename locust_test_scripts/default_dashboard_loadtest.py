@@ -6,8 +6,8 @@ from selenium.common.exceptions import TimeoutException
 from locust import TaskSet, task, between
 
 
-SITE = "https://jcp-dev.lookersandbox.com"
-DASH_ID = 1
+SITE = "https://company.looker.com"  # Change this!
+DASH_ID = 1  # Change this!
 
 
 class LocustUserBehavior(TaskSet):
@@ -59,7 +59,7 @@ class LocustUserBehavior(TaskSet):
     @task(1)
     def simple_dashboard_loading(self):
         self.client.timed_event_for_locust(
-            "Load", "dashboard",
+            "Load", "dashboard-update",
             self.open_dashboard
         )
 

@@ -15,6 +15,10 @@ def get_gke_client(credentials=None):
 
 
 def get_compute_client(credentials=None):
+    """Creates and returns a compute client. Credentials only needed if the Auth
+    environment variable is not set.
+    """
+
     client = googleapiclient.discovery.build("compute", "v1", credentials=credentials)
 
     return client

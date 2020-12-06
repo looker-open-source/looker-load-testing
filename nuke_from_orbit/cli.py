@@ -1,6 +1,6 @@
 import click
 from nuke_from_orbit.commands import setup_commands, teardown_commands
-from nuke_from_orbit.commands import update_config_commands, update_test_commands, update_port_forward_commands
+from nuke_from_orbit.commands import update_config_commands, update_test_commands
 
 
 @click.group()
@@ -37,9 +37,3 @@ def config(**kwargs):
 @click.option("--config-file", help="Which config file to use for the setup")
 def test(**kwargs):
     update_test_commands.main(**kwargs)
-
-
-@update.command()
-@click.option("--config-file", help="Which config file to use for the setup")
-def port_forward(**kwargs):
-    update_port_forward_commands(**kwargs)

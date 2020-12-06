@@ -50,6 +50,18 @@ class TooManyWorkersError(Exception):
         return f"{BColors.FAIL}{self.message}{BColors.ENDC}"
 
 
+class TagMatchError(Exception):
+    """Exception raised if the provided update tag matches the existing tag."""
+
+    def __init__(self, tag, message="Provided tag already in use!"):
+        self.tag = tag
+        self.message = f"{message} Tag: {tag}"
+        super().__init__(self.message)
+
+    def __str__(self):
+        return f"{BColors.FAIL}{self.message}{BColors.ENDC}"
+
+
 def check_required_args(user_config, external=False):
     """Checks a user config dict against required args and throws an error if any are missing.
     Returns a 1 if all required args are present.
@@ -381,6 +393,27 @@ def deploy_oauth_secret(user_config):
     oauth_secret = "iap-secret"
     oauth_secret_value = {"client_id": gcp_oauth_client_id, "client_secret": gcp_oauth_client_secret}
     kubernetes_deploy.deploy_secret(oauth_secret, oauth_secret_value, kubeconfig)
+
+
+def compare_tags(new_tag):
+    """Accepts a container tag and compares it to the existing tag in the locust deployment.
+    If the tags are the same then an exception is raised. Returns 1 if the tags are distinct.
+    """
+
+    # fetch kubeconfig file. Convert to a string for kubernetes client compatibility
+    kubeconfig = str(SCRIPT_PATH.joinpath("rendered", "kubeconfig.yaml"))
+
+    # fetch the current lm-pod deployment info
+    locust_deployment = kubernetes_deploy.get_deployment("lm-pod", kubeconfig)
+
+    # parse the image tag from the container
+    image = locust_deployment.spec.template.spec.containers[0].image
+    current_tag = image.split(":")[-1]
+
+    if new_tag == current_tag:
+        raise TagMatchError(new_tag)
+
+    return 1
 
 
 def kubeconfig_env_variable_command():
