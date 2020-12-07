@@ -3,4 +3,9 @@ docker-compose.yml
 configs/*.yaml
 credentials/*.json
 locust_test_scripts/default_dashboard_loadtest.py
-nuke_from_orbit/utils/rendered/*.yaml
+nuke_from_orbit/utils/rendered/grafana*.yaml
+nuke_from_orbit/utils/rendered/loadtest*.yaml
+nuke_from_orbit/utils/rendered/locust*.yaml
+nuke_from_orbit/utils/rendered/prometheus*.yaml
+nuke_from_orbit/utils/rendered/config-default.yaml
+nuke_from_orbit/utils/rendered/kubeconfig.yaml
