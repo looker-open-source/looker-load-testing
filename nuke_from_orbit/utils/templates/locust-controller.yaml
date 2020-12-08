@@ -58,6 +58,12 @@ spec:
               value: dashboard
             - name: LOCUST_STEP
               value: "{{loadtest_step_load}}"
+            - name: HOST
+              valueFrom:
+                secretKeyRef:
+                  name: website-host
+                  key: host
+                  optional: true
             - name: USERNAME
               valueFrom:
                 secretKeyRef:

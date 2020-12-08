@@ -8,6 +8,7 @@ required_args:
   - gcp_cluster_node_count
   - gcp_cluster_machine_type
   - gcp_service_account_file
+  - looker_host
 required_external_args:
   - gcp_oauth_client_id
   - gcp_oauth_client_secret

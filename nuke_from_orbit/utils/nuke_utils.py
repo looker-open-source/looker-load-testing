@@ -353,17 +353,25 @@ def deploy_test_container_image(user_config):
 
 def deploy_looker_secret(user_config):
     """Accepts a dict of validated user configs and uses them to deploy looker website
-    secrets. Since these values are optional if they are not present in the user config
-    then that secret will be gracefully skipped.
+    secrets. Since some of these values are optional if they are not present in the user
+    config then that secret will be gracefully skipped.
     """
     # fetch kubeconfig file. Convert to a string for kubernetes client compatibility
     kubeconfig = str(SCRIPT_PATH.joinpath("rendered", "kubeconfig.yaml"))
+
+    # set host variable
+    looker_host = user_config["looker_host"]
 
     # set variables if present
     looker_user = user_config.get("looker_user")
     looker_pass = user_config.get("looker_pass")
     looker_api_client_id = user_config.get("looker_api_client_id")
     looker_api_client_secret = user_config.get("looker_api_client_secret")
+
+    # set host secret
+    host_secret = "website-host"
+    host_secret_value = {"host": looker_host}
+    kubernetes_deploy.deploy_secret(host_secret, host_secret_value, kubeconfig)
 
     # conditionally set secrets
     if looker_user and looker_pass:

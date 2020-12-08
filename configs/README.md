@@ -17,6 +17,7 @@ loadtester:
   loadtest_worker_count: 20
   loadtest_script_name: default_dashboard_loadtest.py
 looker_credentials:
+  looker_host: https://looker.company.com
   looker_user: me@company.com
   looker_pass: abc123fakepassword
 external:

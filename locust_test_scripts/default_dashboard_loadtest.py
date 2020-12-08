@@ -6,7 +6,7 @@ from selenium.common.exceptions import TimeoutException
 from locust import TaskSet, task, between
 
 
-SITE = "https://company.looker.com"  # Change this!
+SITE = os.getenv("HOST")
 DASH_ID = 1  # Change this!
 
 
