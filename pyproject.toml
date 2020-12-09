@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nuke_from_orbit"
-version = "0.1.0"
+version = "0.10.0"
 description = "A distributed load testing tool for running api and browser based tests on Looker"
 authors = ["Colin Pistell <colinpistell@google.com>"]
 

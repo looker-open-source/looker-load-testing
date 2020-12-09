@@ -4,6 +4,7 @@ from nuke_from_orbit.commands import update_config_commands, update_test_command
 
 
 @click.group()
+@click.version_option()
 def nuke():
     pass
 
