@@ -28,6 +28,9 @@ def main(**kwargs):
     file_list = nuke_utils.collect_kube_yaml_templates()
     nuke_utils.render_kubernetes_templates(user_config, file_list)
 
+    # set kubernetes context
+    nuke_utils.set_kubernetes_context(user_config)
+
     # deploy secrets
     nuke_utils.deploy_looker_secret(user_config)
 

@@ -288,6 +288,7 @@ def deploy_gke(user_config):
         else:
             sleep(2)
 
+    # create entry for kubeconfig file
     gke_cluster.setup_cluster_auth_file(name, project, zone, client)
 
 
@@ -314,6 +315,29 @@ def destroy_gke(user_config):
             running = False
         else:
             sleep(2)
+
+    # delete entry in kubeconfig file
+    gke_cluster.teardown_cluster_auth_file(name, project, zone)
+
+
+def set_kubernetes_context(user_config):
+    """Sets the kubernetes context to the provided name."""
+
+    # set variables from user config
+    name = user_config["loadtest_name"]
+    project = user_config["gcp_project_id"]
+    zone = user_config["gcp_zone"]
+
+    context_name = f"gke_{project}-{zone}-{name}"
+
+    set_context_command = [
+        "kubectl",
+        "config",
+        "use-context",
+        context_name
+    ]
+
+    subprocess.run(set_context_command)
 
 
 def deploy_test_container_image(user_config):
@@ -356,8 +380,6 @@ def deploy_looker_secret(user_config):
     secrets. Since some of these values are optional if they are not present in the user
     config then that secret will be gracefully skipped.
     """
-    # fetch kubeconfig file. Convert to a string for kubernetes client compatibility
-    kubeconfig = str(SCRIPT_PATH.joinpath("rendered", "kubeconfig.yaml"))
 
     # set host variable
     looker_host = user_config["looker_host"]
@@ -371,27 +393,24 @@ def deploy_looker_secret(user_config):
     # set host secret
     host_secret = "website-host"
     host_secret_value = {"host": looker_host}
-    kubernetes_deploy.deploy_secret(host_secret, host_secret_value, kubeconfig)
+    kubernetes_deploy.deploy_secret(host_secret, host_secret_value)
 
     # conditionally set secrets
     if looker_user and looker_pass:
         creds_secret = "website-creds"
         creds_secret_value = {"username": looker_user, "password": looker_pass}
-        kubernetes_deploy.deploy_secret(creds_secret, creds_secret_value, kubeconfig)
+        kubernetes_deploy.deploy_secret(creds_secret, creds_secret_value)
 
     if looker_api_client_id and looker_api_client_secret:
         api_secret = "api-creds"
         api_secret_value = {"client_id": looker_api_client_id, "client_secret": looker_api_client_secret}
-        kubernetes_deploy.deploy_secret(api_secret, api_secret_value, kubeconfig)
+        kubernetes_deploy.deploy_secret(api_secret, api_secret_value)
 
 
 def deploy_oauth_secret(user_config):
     """Accepts a dict of validated user configs and uses them to deploy gcp oauth
     secrets. These are used to set up ingress for external deployments.
     """
-
-    # fetch kubeconfig file. Convert to a string for kubernetes client compatibility
-    kubeconfig = str(SCRIPT_PATH.joinpath("rendered", "kubeconfig.yaml"))
 
     # set variables
     gcp_oauth_client_id = user_config["gcp_oauth_client_id"]
@@ -400,7 +419,7 @@ def deploy_oauth_secret(user_config):
     # set secrets
     oauth_secret = "iap-secret"
     oauth_secret_value = {"client_id": gcp_oauth_client_id, "client_secret": gcp_oauth_client_secret}
-    kubernetes_deploy.deploy_secret(oauth_secret, oauth_secret_value, kubeconfig)
+    kubernetes_deploy.deploy_secret(oauth_secret, oauth_secret_value)
 
 
 def compare_tags(new_tag):
@@ -424,13 +443,6 @@ def compare_tags(new_tag):
     return 1
 
 
-def kubeconfig_env_variable_command():
-    """returns the string of the command to run to set the KUBECONFIG environment variable"""
-    kubeconfig_path = str(SCRIPT_PATH.joinpath("rendered", "kubeconfig.yaml").resolve())
-
-    return f"export KUBECONFIG={kubeconfig_path}"
-
-
 def deploy_locust(cycle=False):
     """Deploys the locust services and deployments to kubernetes. If the cycle argument is
     set to True then the deployments will be deleted prior to deployment (to be used during
@@ -439,13 +451,10 @@ def deploy_locust(cycle=False):
 
     render_path = SCRIPT_PATH.joinpath("rendered")
 
-    # fetch kubeconfig file. Convert to a string for kubernetes client compatibility
-    kubeconfig = str(render_path.joinpath("kubeconfig.yaml"))
-
     # conditionally delete deployments
     if cycle:
-        kubernetes_deploy.delete_deployment("lw-pod", kubeconfig)
-        kubernetes_deploy.delete_deployment("lm-pod", kubeconfig)
+        kubernetes_deploy.delete_deployment("lw-pod")
+        kubernetes_deploy.delete_deployment("lm-pod")
 
     # roll out locust services and deployments
     locust_master = str(render_path.joinpath("locust-controller.yaml"))
@@ -453,20 +462,9 @@ def deploy_locust(cycle=False):
 
     wait_command = ["kubectl", "rollout", "status"]
 
-    lm_command = APPLY_COMMAND + [
-        locust_master,
-        "--kubeconfig",
-        kubeconfig
-    ]
-
+    lm_command = APPLY_COMMAND + [locust_master]
     lm_wait_command = wait_command + ["deployment/lm-pod"]
-
-    lw_command = APPLY_COMMAND + [
-        locust_worker,
-        "--kubeconfig",
-        kubeconfig
-    ]
-
+    lw_command = APPLY_COMMAND + [locust_worker]
     lw_wait_command = wait_command + ["deployment/lw-pod"]
 
     locust_commands = [lm_command, lm_wait_command, lw_command, lw_wait_command]
@@ -482,9 +480,6 @@ def deploy_external():
 
     render_path = SCRIPT_PATH.joinpath("rendered")
 
-    # fetch kubeconfig file. Convert to a string for kubernetes client compatibility
-    kubeconfig = str(render_path.joinpath("kubeconfig.yaml"))
-
     external_yamls = [
         str(render_path.joinpath("loadtest-cert.yaml")),
         str(render_path.joinpath("loadtest-ingress.yaml")),
@@ -493,7 +488,7 @@ def deploy_external():
 
     win_exec = ["cmd.exe", "/c"]
     for yml in external_yamls:
-        command = APPLY_COMMAND + [yml, "--kubeconfig", kubeconfig]
+        command = APPLY_COMMAND + [yml]
         if os.name == "nt":
             command = win_exec + command
         subprocess.run(command)
@@ -504,9 +499,6 @@ def deploy_secondary():
 
     render_path = SCRIPT_PATH.joinpath("rendered")
 
-    # fetch kubeconfig file. Convert to a string for kubernetes client compatibility
-    kubeconfig = str(render_path.joinpath("kubeconfig.yaml"))
-
     secondary_yamls = [
         str(render_path.joinpath("prometheus-config.yaml")),
         str(render_path.joinpath("prometheus-controller.yaml")),
@@ -516,7 +508,7 @@ def deploy_secondary():
 
     win_exec = ["cmd.exe", "/c"]
     for yml in secondary_yamls:
-        command = APPLY_COMMAND + [yml, "--kubeconfig", kubeconfig]
+        command = APPLY_COMMAND + [yml]
         if os.name == "nt":
             command = win_exec + command
         subprocess.run(command)

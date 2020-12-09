@@ -14,12 +14,12 @@ def main(**kwargs):
     # get the user credentials
     user_config = nuke_utils.set_variables(config_file)
 
-    # determine if external has been triggered by testing for an ip address
-    ip = nuke_utils.get_ip_address(user_config)
-
     # set gcp service account environment variable
     service_account_file = sa_dir.joinpath(user_config["gcp_service_account_file"]).resolve()
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(service_account_file)
+
+    # determine if external has been triggered by testing for an ip address
+    ip = nuke_utils.get_ip_address(user_config)
 
     # multithread the teardown
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:

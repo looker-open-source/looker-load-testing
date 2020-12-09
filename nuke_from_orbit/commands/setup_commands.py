@@ -43,6 +43,9 @@ def main(**kwargs):
     file_list = nuke_utils.collect_kube_yaml_templates(external)
     nuke_utils.render_kubernetes_templates(user_config, file_list)
 
+    # set kubernetes context
+    nuke_utils.set_kubernetes_context(user_config)
+
     # deploy secrets
     nuke_utils.deploy_looker_secret(user_config)
     if external:
@@ -61,7 +64,7 @@ def main(**kwargs):
     ip_message = f"Cluster IP is {ip}. Please create an A Record in your DNS provider for *.{dns} that points to {ip}."
     kubectl_message = (
         "To configure kubectl access please run the following command:\n"
-        f"{nuke_utils.kubeconfig_env_variable_command()}\n\n"
+        f"export GOOGLE_APPLICATION_CREDENTIALS={str(service_account_file)}\n\n"
     )
     port_forward_message = (
         "You can now use `kubectl port-forward` commands."

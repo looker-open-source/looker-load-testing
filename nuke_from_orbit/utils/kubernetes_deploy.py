@@ -3,20 +3,20 @@ from kubernetes.client.rest import ApiException
 from time import sleep, time
 
 
-def deploy_from_yaml(yaml_file, config_file, namespace="default"):
+def deploy_from_yaml(yaml_file, namespace="default"):
     """Deploys a multi-part yaml manifest to kubernetes"""
 
-    config.load_kube_config(config_file=config_file)
+    config.load_kube_config()
     k8_client = client.ApiClient()
     utils.create_from_yaml(k8_client, yaml_file, namespace=namespace)
 
 
-def get_deployment(deployment_name, config_file, namespace="default"):
+def get_deployment(deployment_name, namespace="default"):
     """Accepts a deployment name and returns the specified deployment object from kubernetes.
     Can be used to extract relevant metadata such as the version tag.
     """
 
-    config.load_kube_config(config_file=config_file)
+    config.load_kube_config()
 
     with client.ApiClient() as api_client:
         api_instance = client.AppsV1Api(api_client)
@@ -25,13 +25,13 @@ def get_deployment(deployment_name, config_file, namespace="default"):
     return resp
 
 
-def wait_for_deployment(deployment_name, config_file, namespace="default", timeout=60):
+def wait_for_deployment(deployment_name, namespace="default", timeout=60):
     """Polls for the status of a given deployment. When successful, a success message is
     printed and boolean True is returned. If deployment is not ready by the specified
     timeout argument (default 60 seconds) a timeout exception is thrown.
     """
 
-    config.load_kube_config(config_file=config_file)
+    config.load_kube_config()
 
     with client.ApiClient() as api_client:
         api_instance = client.AppsV1Api(api_client)
@@ -67,7 +67,7 @@ def wait_for_deployment(deployment_name, config_file, namespace="default", timeo
         print("Timeout!")
 
 
-def deploy_secret(secret_name, secret_data, config_file, namespace="default"):
+def deploy_secret(secret_name, secret_data, namespace="default"):
     """Creates or updates a secret with the values specified in the secret_data param.
     This param must be a dict where the key is the entry name and the value is the secret
     value (e.g. `{"username": "dudefella"}'). If the secret already exists then it will
@@ -78,7 +78,7 @@ def deploy_secret(secret_name, secret_data, config_file, namespace="default"):
     api_version = "v1"
     kind = "Secret"
 
-    config.load_kube_config(config_file)
+    config.load_kube_config()
     k8 = client.CoreV1Api()
     body = client.V1Secret(api_version=api_version, kind=kind, metadata=secret_metadata, string_data=secret_data)
 
@@ -93,10 +93,10 @@ def deploy_secret(secret_name, secret_data, config_file, namespace="default"):
     return resp
 
 
-def delete_deployment(deployment_name, config_file):
+def delete_deployment(deployment_name):
     """Deletes a deployment - usually as a part of a config refresh."""
 
-    config.load_kube_config(config_file=config_file)
+    config.load_kube_config()
 
     with client.ApiClient() as api_client:
         api_instance = client.AppsV1Api(api_client)

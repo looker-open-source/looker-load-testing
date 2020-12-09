@@ -1,7 +1,6 @@
 import googleapiclient.discovery
+import subprocess
 from google.cloud import container_v1
-from jinja2 import Template
-from pathlib import Path
 
 
 def get_gke_client(credentials=None):
@@ -140,12 +139,11 @@ def gke_task_status(name, project, zone, client):
 
 
 def setup_cluster_auth_file(name, project, zone, client):
-    """Creates a kubeconfig yaml file suitable for use to authorize calls to the
-    kubernetes API using GCP service account credentials. This file is assumed to
-    be in place in the `rendered` directory before any kubernetes deployments are
-    done. While this file sets up the use of GCP service accounts the user will still
-    need to set the GOOGLE_APPLICATION_CREDENTIALS environment variable. Returns a
-    string with the absolute path to the created credentials file.
+    """Creates a kubeconfig entry suitable for use to authorize calls to the
+    kubernetes API using GCP service account credentials.  While this file sets up
+    the use of GCP service accounts the user will still need to set the
+    GOOGLE_APPLICATION_CREDENTIALS environment variable. Returns a string with the
+    name of the context to use.
     """
 
     cluster_name = f"projects/{project}/locations/{zone}/clusters/{name}"
@@ -156,23 +154,80 @@ def setup_cluster_auth_file(name, project, zone, client):
     ca_cert = cluster.master_auth.cluster_ca_certificate
     endpoint = cluster.endpoint
 
-    # This dict is used to easily render the kubeconfig template with jinja
-    vals = {
-        "name": name,
-        "project": project,
-        "zone": zone,
-        "ca_cert": ca_cert,
-        "endpoint": endpoint
-    }
+    # Set the name for the entries
+    entry_name = f"gke_{project}-{zone}-{name}"
 
-    script_path = Path(__file__).parent
-    kubeconfig_template = script_path.joinpath("templates", "kubeconfig.yaml")
-    kubeconfig_rendered = script_path.joinpath("rendered", "kubeconfig.yaml")
-    template = kubeconfig_template.read_text()
-    # Render the template with jinja
-    rendered = Template(template).render(**vals)
+    cluster_command = [
+        "kubectl",
+        "config",
+        "set-cluster",
+        entry_name,
+        "--server",
+        f"https://{endpoint}"
+    ]
 
-    with open(kubeconfig_rendered, "w") as f:
-        f.write(rendered)
+    cluster_ca_command = [
+        "kubectl",
+        "config",
+        "set",
+        f"clusters.{entry_name}.certificate-authority-data",
+        ca_cert
+    ]
 
-    return kubeconfig_rendered.resolve()
+    user_command = [
+        "kubectl",
+        "config",
+        "set-credentials",
+        entry_name,
+        "--auth-provider",
+        "gcp"
+    ]
+
+    context_command = [
+        "kubectl",
+        "config",
+        "set-context",
+        entry_name,
+        "--cluster",
+        entry_name,
+        "--user",
+        entry_name
+    ]
+
+    subprocess.run(cluster_command)
+    subprocess.run(cluster_ca_command)
+    subprocess.run(user_command)
+    subprocess.run(context_command)
+
+    return entry_name
+
+
+def teardown_cluster_auth_file(name, project, zone):
+    """Removes a kubeconfig entry for the cluster."""
+
+    entry_name = f"gke_{project}-{zone}-{name}"
+
+    cluster_command = [
+        "kubectl",
+        "config",
+        "delete-cluster",
+        entry_name
+    ]
+
+    user_command = [
+        "kubectl",
+        "config",
+        "delete-credentials",
+        entry_name
+    ]
+
+    context_command = [
+        "kubectl",
+        "config",
+        "delete-context",
+        entry_name,
+    ]
+
+    subprocess.run(cluster_command)
+    subprocess.run(user_command)
+    subprocess.run(context_command)
