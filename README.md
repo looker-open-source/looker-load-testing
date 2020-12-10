@@ -2,19 +2,33 @@
 
 ![nuke-from-orbit](https://i.imgflip.com/1o9ejc.jpg)
 
-Sometimes you need a little more boom, so let's rain fire from the clouds... it's the only way to be sure.
+Nuke From Orbit (aka NFO) is a framework for load testing Looker instances. It is designed to be easy to set up, easy to
+use, and approachable for just about anybody who wants to answer questions about how their infrastructure is performing.
 
-This section contains a framework for a Kubernetes-based distributed LocustIO cluster. Provided is an example of how to
-run a "real browser" based test of a looker dashboard.
+NFO is designed to perform either API-based or Browser-based load testing via distributed Kubernetes clusters in the
+cloud (hence the name -  we're raining fire from the clouds...).
 
-The instructions below are for GCP, but this pattern can be run on any Kubernetes cluster in any environment with some modifications. At a high level
-the steps are:
+NFO is a python application - it makes use of the battle-tested [Locust.io](https://locust.io/) framework and adds
+the ability to run browser-based tests in a containerized/orchestrated environment (i.e. kubernetes).
 
-1. Build a Docker image of your locust tests
-2. Spin up a Kubernetes cluster
-3. Create the master and worker deployments, the service, and any related secrets
-4. Port forward the relevant port and/or provide ingress, secured with HTTPS and some form of authentication (IAP in this case)
-5. (Optional) Wire it up to a monitoring solution, like Grafana
+## Why browser-based tests?
+
+Browser-based load testing is a relatively new concept - in the past the expense of running enough browsers to
+stress-test an instance was cost-prohibitive. This challenge has been mitigated by the economies of scale that cloud
+computing provides.
+
+Browser tests offer several clear advantages. First, the writing of tests is significantly easier - simply use browser
+automation tools like selenium to dictate what you want to happen in the browser - no need to simulate the same process
+with dozens (if not hundreds) of API calls. For example, a Looker dashboard load is comprised of many many different API
+calls... but with browser based testing you simply load the dashboard URL and that's it.
+
+Second, there are some elements of Looker performance that cannot be captured by API tests. For example, loading a
+dashboard requires the final graphics be rendered in the page. Browser-based tests can capture this time.
+
+There is a trade-off - while cloud infrastructure makes browser-based testing affordable it is still more expensive than
+API-based testing. If you can frame your tests as pure http/API calls then you will be able to generate far more
+simulated traffic at a much lower price. NFO can handle both types of tests (and combinations of them within the same
+test script!)
 
 ## A note on scaling
 
@@ -34,17 +48,14 @@ on a dashboard this is equivalent to approximately 600 concurrent users.
 
 ## Prerequisites
 
-First, you will need access to GCP and have installed the [gcloud command line utility](https://cloud.google.com/sdk/install).
+First, you will need access to GCP and have Editor access to a GCP Project
 
-You will need access to a Linux system and a bash shell. OSX could work but you would need to update your bash version
-to > 4.2. Linux subsystem for Windows should also work, but I have not tested these instructions on Windows.
+You will need a working version of python 3.8+. I would recommend making use of [pyenv](https://github.com/pyenv/pyenv) to manage your Python
+installations.
 
-You will need a working version of python 3.7. I would recommend making use of [pyenv](https://github.com/pyenv/pyenv) to manage your Python
-installations. You will also need [Pipenv](https://pipenv-fork.readthedocs.io/en/latest/) to manage the virtual environment and the required library installation.
+You will also need [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/), the command line tool for interacting with kubernetes
 
-You will also need [jq](https://stedolan.github.io/jq/), a command-line JSON parsing utility.
-
-Finally, in order for https and IAP to work correctly you will need to own or have control of a registered domain. You should
+Finally, in order to access your NFO instance via the web you will need to own or have control of a registered domain. You should
 have the ability to create an A-Record from that domain's DNS.
 
 ## Before you begin
@@ -56,7 +67,17 @@ assets of course)
 ### From the GCP Console
 
 1. Create a suitable GCP Project. I recommend creating a new unique project for the load testing tool. We don’t want to run the risk of trampling other projects you may be working on.
-2. Create a service account in your new project:
+2. Ensure the correct APIs have been enabled. From the GCP console open a [cloud shell](https://cloud.google.com/shell) and run the following command:
+
+    $ gcloud services enable \
+      cloudbuild.googleapis.com \
+      compute.googleapis.com \
+      container.googleapis.com \
+      containeranalysis.googleapis.com \
+      containerregistry.googleapis.com \
+      iap.googleapis.com
+
+3. Create a service account in your new project:
     * Navigate to IAM-Admin -> Service Accounts, click Create Service Account at top of page.
     * Follow the instructions to create a service account:
     * On the second page when prompted for roles you can give it Project Editor.
@@ -68,16 +89,16 @@ assets of course)
 
 > **Note:** These next steps are only required if you plan on using External Mode to access the load tester via the web
 
-3. Assign IAP WebApp User Permissions to yourself:
+4. Assign IAP WebApp User Permissions to yourself:
     * Navigate to IAM-Admin -> IAM
     * Find yourself in the list of users and accounts (i.e. the email address you want to use to log in to the tool). Click the Edit icon on the right.
     * Click ‘Add Another Role’ and select ‘IAP-secured Web App User`
-4. Create your OAuth Consent Page:
+5. Create your OAuth Consent Page:
     * Navigate to API & Services -> Oauth Consent Screen. Create an app:
         * Set the type to Internal (unless you need to share permissions external to your org)
         * Enter an App Name, User Support Email and Developer Contact Information.
     * The next page should be Scopes - do not fill in anything.
-5. Create Oauth Credentials:
+6. Create Oauth Credentials:
     * Navigate to API & Services -> Credentials.
     * Click Create Credentials.
         * Select Oauth Client Id.
@@ -95,118 +116,102 @@ In your development environment, clone the load testing repo:
 
 ### Install Python libraries
 
-Using `pipenv`, install the required Python libraries:
+It is strongly recommended you create a new virtual environment for this project. From the project root directory use
+pip to install the required libraries:
 
-    $ pipenv install --ignore-pipfile --python 3.7
+    $ pip install .
 
-
-### Activate Your gcloud Service Account
-
-You will need to activate the service account using the credentials file you generated above:
-
-    $ gcloud auth activate-service-account foobar@myproject.iam.gserviceaccount.com --key-file path/to/credentials.json
-
-You will likely need to (re)initialize your gcloud profile:
-
-    $ gcloud init
-
-Follow the interactive steps to select your service account and relevant GCP Project.
-
-### Enable APIs
-
-The Following services should be enabled in your project:
-
-    $ gcloud services enable \
-      cloudbuild.googleapis.com \
-      compute.googleapis.com \
-      container.googleapis.com \
-      containeranalysis.googleapis.com \
-      containerregistry.googleapis.com \
-      iap.googleapis.com
+(If you make use of [poetry](https://python-poetry.org/) you can run `poetry install` and have it handle the virtualenv for you)
 
 
 ## Deploy The Load Tester
 
 ### Write your test manifest
 
-Navigate to the `test_scripts` directory and create your test script. Documentation for standard http tests can be found
+Navigate to the `locust_test_scripts` directory and create your test script. Documentation for standard http tests can be found
 [here](https://docs.locust.io/en/0.14.6/writing-a-locustfile.html)
 
-Examples for browser-based tests can be found in `test_scripts`.
+Examples for browser-based tests can be found in `locust_test_scripts`.
 
 You will need to pass the relevant script name into the config file - see below for more details.
 
 > The example `defaut_dashboard_loadtest` outlines a standard dashboard rendering performance test. If you want to use this with
-> your own instance, near the top of the file you will want to modify the `SITE` and `DASH_ID` variables to match the Looker instance
+> your own instance, near the top of the file you will want to modify the `DASH_ID` variables to match the Looker instance
 > you are testing and the relevant dashboard id. Different testing goals will require specific test code - Locust is flexible enough
 > to handle just about any kind of test you can think of!
 
+### Copy service account file to credentials directory
+
+In order for NFO to authenticate to GCP correctly you must copy the service account json you created above to the
+`credentials` directory. You will refer to this file in the config file you create next.
+
 ### Set Config Parameters
 
-Navigate to the nuke-from-orbit directory and create a json file called ‘config.json’. You’ll need to add entries for the following items:
+Navigate to the nuke-from-orbit directory and create a json file called ‘config.yaml’. You’ll need to add entries for the following items:
 
-* **loadtest_name**: A unique identifier for your load test
-* **loadtest_step_load**: ("true"|"false") Should locust run in [step mode](https://docs.locust.io/en/0.14.6/running-locust-in-step-load-mode.html)
-* **loadtest_dns_domain**: The DNS domain/subdomain name
-* **loadtest_worker_count**: How many workers should be created
-* **loadtest_script_name**: The name of the script that contains your test logic. Only include the script name - do not include the .py extension
-* **gcp_project_id**: The project ID of your GCP project
-* **gcp_region**: The GCP region
-* **gcp_zone**: The GCP zone
-* **gcp_oauth_client_id**: (External Mode) The OAuth Client ID you generated earlier
-* **gcp_oauth_client_secret**: (External Mode) The OAuth Client Secret you generated earlier
-* **gcp_cluster_node_count**: How many nodes should be included in the load test cluster
-* **gcp_cluster_machine_type**: What compute instance machine type should be used? (Almost certainly a C2 type instance)
-* **looker_user**: (Optional) The username of the Looker instance you are testing
-* **looker_pass**: (Optional) The password of the Looker instance you are testing
-* **looker_api_client_id**: (Optional) The API client_id of the Looker instance you are testing
-* **looker_api_client_secret**: (Optional) The API client_secret of the Looker instance you are testing
+* **gke_cluster**
+  - **gcp_project_id**: The project ID of your GCP project
+  - **gcp_zone**: The GCP zone
+  - **gcp_cluster_node_count**: How many nodes should be included in the load test cluster
+  - **gcp_cluster_machine_type**: What compute instance machine type should be used? (Almost certainly a C2 type instance)
+  - **gcp_service_account_file**: The name of the service account file you generated from GCP. Just the file name, not
+    the path
+* **loadtester**
+  - **loadtest_name**: A unique identifier for your load test
+  - **loadtest_step_load**: ("true"|"false") Should locust run in [step mode](https://docs.locust.io/en/0.14.6/running-locust-in-step-load-mode.html)
+  - **loadtest_worker_count**: How many workers should be created
+  - **loadtest_script_name**: The name of the script that contains your test logic. Only include the script's file name, not the rest of the path
+* **looker_credentials**
+  - **looker_host**: The URL of the Looker instance you are testing
+  - **looker_user**: (Optional) The username of the Looker instance you are testing
+  - **looker_pass**: (Optional) The password of the Looker instance you are testing
+  - **looker_api_client_id**: (Optional) The API client_id of the Looker instance you are testing
+  - **looker_api_client_secret**: (Optional) The API client_secret of the Looker instance you are testing
+* **external**
+  - **gcp_oauth_client_id**: (External Mode) The OAuth Client ID you generated earlier
+  - **gcp_oauth_client_secret**: (External Mode) The OAuth Client Secret you generated earlier
+  - **loadtest_dns_domain**: The DNS domain/subdomain name you want to use to access the NFO resources
 
 Your config may look something like this:
 
 ```
-{
-  "loadtest_name": "my-gke-load-test-name",
-  "loadtest_step_load": "true",
-  "loadtest_dns_domain": "loadtest.company.com",
-  "loadtest_worker_count": 5,
-  "loadtest_script_name": "defaut_dashboard_loadtest",
-  "gcp_project_id": "my-gcp-project-name",
-  "gcp_region": "us-central1",
-  "gcp_zone": "us-central1-c",
-  "gcp_oauth_client_id": "abc123xyz.apps.googleusercontent.com",
-  "gcp_oauth_client_secret": "foobarbaz",
-  "gcp_cluster_node_count": 3,
-  "gcp_cluster_machine_type": "c2-standard-8",
-  "looker_user": "me@company.com",
-  "looker_pass": "abc_123_xyz"
-}
+gke_cluster:
+  gcp_project_id: my-gcp-project
+  gcp_zone: us-central1-c
+  gcp_cluster_node_count: 3
+  gcp_cluster_machine_type: c2-standard-8
+  gcp_service_account_file: my-service-account-file.json
+loadtester:
+  loadtest_name: demo-loadtest
+  loadtest_step_load: "true"
+  loadtest_worker_count: 20
+  loadtest_script_name: default_dashboard_loadtest.py
+looker_credentials:
+  looker_host: https://looker.company.com
+  looker_user: me@company.com
+  looker_pass: abc123fakepassword
+external:
+  gcp_oauth_client_id: abc123.apps.googleusercontent.com
+  gcp_oauth_client_secret: 789xzyfakeclient
+  loadtest_dns_domain: py-loadtest.colinpistell.com
 ```
 
 > ⚠ Warning: This config contains sensitive information, so protect this file like any other credentials.
 
 ### Deploy!
 
-Navigate to the project root and activate your pipenv environment:
-
-    $ pipenv shell
-
 Navigate to the nuke-from-orbit directory and kick off the deployment!
 
-    $ cd nuke-from-orbit
-    $ ./loadtester setup
-
+    $ nuke setup --config-file config.yaml --external
 
 > ★ Tip: The script will take around 5 minutes to complete depending on what kind of instances it’s creating.
 
-3. The script should end with it performing a port-forward to make the locust UI available on localhost:8089. Navigate
-   there in a browser and you should be ready to begin!
+When the script concludes it will output some final instructions. If you've chosen to run in external mode you will need
+to set up a DNS A Record for the printed IP address and URL.
 
-
-### Accessing the Load Tester
-
-The UI should be available via browser at localhost:8089
-
+Some additional instructions will be printed in case you wish to port-forward the locust services for immediate access.
+If you're running in external mode the google-managed SSL certificate will take 15-20 minutes to provision, but you can
+port-forward immediately. See the [kubernetes documentation](https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/) for more details.
 
 
 ### Updating the test
@@ -215,61 +220,28 @@ Since the test script is a part of the container you build and deploy any update
 building and deploying a new container. This process has been automated with an `update` command. Make your required
 changes to the test script and then run the following command:
 
-    $ ./loadtester update test -t <tag>
+    $ nuke update test --config-file config.yaml --tag <tag>
 
 This will rebuild the container and execute the correct steps to update the kubernetes deployment. These changes will be
 available immediately upon completion of the command - no need to redeploy the ingress or wait for DNS this time around!
 
 > Note: You must provide a unique tag to trigger a rebuild - attempting to use the same tag will result in an error.
 > Consider using a tag that includes a version number. When you first deploy the load tester it automatically creates a
-> tag of 'v1' so one good option is to simply increment the number, e.g. 'v2', 'v3', etc. The exception to this rule is
-> using the 'latest' tag which will always be accepted and automatically trigger a rebuild, per Docker and Kubernetes
-> convention.
+> tag of 'v1' so one good option is to simply increment the number, e.g. 'v2', 'v3', etc.
 
 ### Updating the config
 
 If your updates involve changes to just the config you can make use of the following command:
 
-    $ ./loadtester update config
+    $ nuke update config --config-file config.yaml
 
 This will redeploy the master/worker deployments with the updated config - this is even faster than the test update
 command since there's no need to build a new container image!
 
-### Updating the port-forwarding
-
-Should you need to refresh your port-forwarding you can make use of the following command:
-
-    $ ./loadtester update forward-ports
-
-There are two flags you can add:
-
-    $ ./loadtester update forward-ports -k
-
-This will kill any process that is using port 8089, freeing it up for use. This can be handy if you receive any errors
-during setup about port 8089 being in use.
-
-    $ ./loadtester update forward-ports -f
-
-This will "force" the port forwarding - namely by running a kill command followed by a port-forward command.
-
-### Running in External Mode
-
-In addition to the standard port-forward mode, you can run the load tester in "External" mode which creates a secure
-route to the interface via the web. This can be useful is multiple people want to access the interface or if
-port-fowarding is not an option.
-
-First, make sure you've performed the setup steps required for External mode above.
-
-Run the following command:
-
-    $ ./loadtester setup external
-
-The final output will provide additional instructions for how to set up your DNS entry to allow for access to the
-load tester. Set up an A Record for the wildcard domain to the specified IP address.
 
 #### Accessing the UI via the web
 
-For the purposes of an example, let’s say the `load_test_dns_domain` parameter in your `config.json` was set to `my-loadtest.company.com`. Once everything has some time to bake
+For the purposes of an example, let’s say the `load_test_dns_domain` parameter in your `config.yaml` was set to `my-loadtest.company.com`. Once everything has some time to bake
 you will be able to access your load tester at `https://locust.my-loadtest.company.com`.
 
 
@@ -285,22 +257,52 @@ example, the following command scales the pool of Locust worker pods to 20:
 
 ### Monitoring
 
-While we can now load test Looker at scale, testing without monitoring is like shooting in the dark. While the locust UI
-provides some good real-time monitoring to truly make use of the data you collect I would suggest integrating the locust
-metrics with your internal Looker and other infrastructure monitoring. Keeping with the example DNS from above the load
-tester makes the Locust metrics available at `https://locust-metrics.myloadtest.company.com/metrics`. The metrics are
-presented in Prometheus format and should be ingestable by any modern monitoring tool.
+In addition to the locust interface itself, NFO makes available a grafana instance with a pre-configured dashboard. You
+can access this at `https://grafana.my-loadtest.company.com` (following the example from above - make sure you use your
+proper domain!) if you've deployed in external mode. If you're port forwarding you can forward the `grafana` service's port 80 to access.
+
+The preconfigured dashboard includes some locust tiles as well as preset looker monitoring for looker instances running
+on GCP - you'll need to create a generic Google Cloud Monitoring datasource - follow [grafana's documentation](https://grafana.com/docs/grafana/latest/datasources/cloudmonitoring/)
+for more details. Grafana can handle just about any standard data source so feel free to modify to suit your needs!
+
+### Multiple load tests
+
+NFO supports deploying multiple load tests at any given time. Simply create a new config yaml in your `configs`
+directory with your desired configuration and deploy as normal, referencing the new config file in your `--config-file`
+parameter! NFO will handle setting up your kubectl context for you.
 
 ## Cleaning up
 
 Once you are done load testing and exporting data you can tear down your cluster to avoid additional costs. From the
 nuke-from-orbit directory:
 
-    $ ./loadtester teardown
+    $ nuke teardown --config-file config.yaml
 
 You will likely want to clean up your DNS entry as well.
 
-To kick off another test simply rerun the `./loadtester setup` command and you're back in business!
+To kick off another test simply rerun the `nuke setup` command and you're back in business!
+
+## Local Mode
+
+You can run locust in local mode - this may be desirable during test development for rapid iteration. You will need to
+make sure you have a suitable version of [Chromedriver](https://chromedriver.chromium.org/downloads) installed. This
+**must** match the version of Chrome you have on your system... mismatches in versions will cause errors!
+
+Once you have Chromedriver installed you can start a locust instance with the following command:
+
+    $ locust -f path/to/test-script.py
+
+
+(replace the path with the correct path to the load test you want to run)
+
+Locust will by default be made available on localhost:8089.
+
+You will very likely need to set some environment variables in order to properly run your tests - these variables will
+likely be:
+
+- HOST (your looker host)
+- USERNAME (the username you will log in with)
+- PASS (the password associated with the username you're using)
 
 ## Additional Reading
 
