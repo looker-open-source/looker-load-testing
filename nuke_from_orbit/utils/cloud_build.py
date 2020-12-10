@@ -33,7 +33,7 @@ def get_or_create_bucket(bucket_name, storage_client):
     try:
         bucket = storage_client.get_bucket(bucket_name)
     except NotFound:
-        bucket = storage_client.create_buicket(bucket_name)
+        bucket = storage_client.create_bucket(bucket_name)
 
     return bucket
 
