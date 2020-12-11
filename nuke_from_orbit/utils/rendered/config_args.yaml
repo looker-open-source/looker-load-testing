@@ -1,0 +1,20 @@
+required_args:
+  - gcp_project_id
+  - loadtest_name
+  - loadtest_step_load
+  - loadtest_worker_count
+  - loadtest_script_name
+  - gcp_zone
+  - gcp_cluster_node_count
+  - gcp_cluster_machine_type
+  - gcp_service_account_file
+  - looker_host
+required_external_args:
+  - gcp_oauth_client_id
+  - gcp_oauth_client_secret
+  - loadtest_dns_domain
+optional_args:
+  - looker_user
+  - looker_pass
+  - looker_api_client_id
+  - looker_api_client_secret
