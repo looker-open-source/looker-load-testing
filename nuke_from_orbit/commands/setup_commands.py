@@ -36,8 +36,10 @@ def main(**kwargs):
             future.result()
 
     # fetch the ip address for final output
-    ip = nuke_utils.get_ip_address(user_config)
-    dns = user_config["loadtest_dns_domain"]
+    if external:
+        ip = nuke_utils.get_ip_address(user_config)
+        dns = user_config["loadtest_dns_domain"]
+        ip_message = f"Cluster IP is {ip}. Please create an A Record in your DNS provider for *.{dns} that points to {ip}."
 
     # parse and render kubernetes template files
     file_list = nuke_utils.collect_kube_yaml_templates(external)
@@ -61,7 +63,6 @@ def main(**kwargs):
     # deploy secondary services
     nuke_utils.deploy_secondary()
 
-    ip_message = f"Cluster IP is {ip}. Please create an A Record in your DNS provider for *.{dns} that points to {ip}."
     kubectl_message = (
         "To configure kubectl access please run the following command:\n"
         f"export GOOGLE_APPLICATION_CREDENTIALS={str(service_account_file)}\n\n"
