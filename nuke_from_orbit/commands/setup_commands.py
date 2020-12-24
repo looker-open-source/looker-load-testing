@@ -12,6 +12,10 @@ def main(**kwargs):
     # set the external boolean
     external = kwargs["external"]
 
+    # set the persistence boolean
+    persistence = kwargs["persistence"]
+    print(persistence)
+
     # setting tag to v1 for initial setup
     tag = "v1"
 
@@ -25,12 +29,14 @@ def main(**kwargs):
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(service_account_file)
 
     # multithread the gke deployment and cloud build for maximum fast
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         tasks = []
         tasks.append(executor.submit(nuke_utils.deploy_gke, user_config))
         tasks.append(executor.submit(nuke_utils.deploy_test_container_image, user_config))
         if external:
             tasks.append(executor.submit(nuke_utils.deploy_ip_address, user_config))
+        if persistence:
+            tasks.append(executor.submit(nuke_utils.deploy_persistent_disk, user_config))
 
         for future in concurrent.futures.as_completed(tasks):
             future.result()

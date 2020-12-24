@@ -1,4 +1,33 @@
 ---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: loadtest-prom-persist
+spec:
+  storageClassName: "nfo_persistent_storage"
+  capacity:
+    storage: 50G
+  accessModes:
+    - ReadWriteOnce
+  claimRef:
+    namespace: default
+    name: loadtest_prom_persist
+  gcePersistentDisk:
+    pdName: {{loadtest_name}}
+    fsType: ext4
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: loadtest_prom_persist
+spec:
+  storageClassName: "nfo_persistent_storage"
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50G
+---
 kind: Service
 apiVersion: v1
 metadata:
@@ -59,4 +88,5 @@ spec:
             name: prom-conf
 
         - name: prometheus-storage-volume
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: loadtest_prom_persist

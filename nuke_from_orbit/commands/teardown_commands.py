@@ -9,6 +9,8 @@ def main(**kwargs):
     config_dir = root_dir.joinpath("configs")
     sa_dir = root_dir.joinpath("credentials")
 
+    teardown_all = kwargs["all"]
+
     config_file = config_dir.joinpath(kwargs["config_file"])
 
     # get the user credentials
@@ -22,11 +24,13 @@ def main(**kwargs):
     ip = nuke_utils.get_ip_address(user_config)
 
     # multithread the teardown
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
         tasks = []
         tasks.append(executor.submit(nuke_utils.destroy_gke, user_config))
         if ip:
             tasks.append(executor.submit(nuke_utils.destroy_ip_address, user_config))
+        if teardown_all:
+            tasks.append(executor.submit(nuke_utils.destroy_persistent_disk, user_config))
 
         for future in concurrent.futures.as_completed(tasks):
             future.result()
