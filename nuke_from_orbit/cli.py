@@ -12,12 +12,14 @@ def nuke():
 @nuke.command()
 @click.option("--config-file", help="Which config file to use for the setup")
 @click.option("--external", is_flag=True, help="Should external ingress be set up")
+@click.option("--persistence/--no-persistence", default=True, help="Should persistent disk setup be skipped?")
 def setup(**kwargs):
     setup_commands.main(**kwargs)
 
 
 @nuke.command()
 @click.option("--config-file", help="Which config file to use for the setup")
+@click.option("--all", is_flag=True, help="Should teardown include persistent disk")
 def teardown(**kwargs):
     teardown_commands.main(**kwargs)
 

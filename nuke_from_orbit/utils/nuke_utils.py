@@ -193,6 +193,68 @@ def render_kubernetes_templates(values_dict, files):
             f.write(rendered)
 
 
+def deploy_persistent_disk(user_config):
+    """Accepts a dict of validated user configs and uses them to build a GCE persistent disk.
+    First we check to see if the disk currently exists (i.e. persisted from last session) If
+    the disk does not exist it is created. This disk will be used as a persistent volume for
+    prometheus to retain data.
+    """
+
+    # set variables from user config
+    name = user_config["loadtest_name"]
+    project = user_config["gcp_project_id"]
+    zone = user_config["gcp_zone"]
+
+    # create the compute client. we're relying on the environment variable to be set for credentials
+    client = gke_cluster.get_compute_client()
+
+    try:
+        gke_cluster.fetch_zonal_disk(name, project, zone, client)
+        print(f"Found persistent disk {name}. Attaching to cluster...")
+    except HttpError:
+        print("No existing persistent disk found. Creating...")
+        disk_task = gke_cluster.create_zonal_disk(name, project, zone, client)
+
+        running = True
+        while running:
+            status = gke_cluster.compute_zonal_task_status(disk_task, project, zone, client)
+            print(f"Creating persistent disk {name}: {status}")
+            if status == "DONE":
+                running = False
+            else:
+                sleep(2)
+
+
+def destroy_persistent_disk(user_config):
+    """Accepts a dict of validated user configs and uses them to destroy a GCE persistent disk.
+    Tracks the status of the job and confirms successful deletion.
+    """
+
+    # set variables from user config
+    name = user_config["loadtest_name"]
+    project = user_config["gcp_project_id"]
+    zone = user_config["gcp_zone"]
+
+    # create the compute client. we're relying on the environment variable to be set for credentials
+    client = gke_cluster.get_compute_client()
+
+    try:
+        gke_cluster.fetch_zonal_disk(name, project, zone, client)
+        print(f"Found persistent disk {name}. Deleting...")
+        disk_task = gke_cluster.delete_zonal_disk(name, project, zone, client)
+
+        running = True
+        while running:
+            status = gke_cluster.compute_zonal_task_status(disk_task, project, zone, client)
+            print(f"Deleting persistent disk {name}: {status}")
+            if status == "DONE":
+                running = False
+            else:
+                sleep(2)
+    except HttpError:
+        print("No persistent disk exists. Moving on!")
+
+
 def deploy_ip_address(user_config):
     """Accepts a dict of validated user configs and uses them to deploy a global ip
     address that is used for the gke ingress controller (if appropriate).

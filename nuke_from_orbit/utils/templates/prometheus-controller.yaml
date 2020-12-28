@@ -1,4 +1,33 @@
 ---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: loadtest-prom-persist
+spec:
+  storageClassName: "nfo-persistent-storage"
+  capacity:
+    storage: 50G
+  accessModes:
+    - ReadWriteOnce
+  claimRef:
+    namespace: default
+    name: loadtest-prom-persist
+  gcePersistentDisk:
+    pdName: {{loadtest_name}}
+    fsType: ext4
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: loadtest-prom-persist
+spec:
+  storageClassName: "nfo-persistent-storage"
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50G
+---
 kind: Service
 apiVersion: v1
 metadata:
@@ -34,6 +63,9 @@ spec:
       containers:
         - name: prom-pod
           image: prom/prometheus:v2.19.1
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsUser: 0
           args:
             - "--config.file=/etc/prometheus/prometheus.yml"
             - "--storage.tsdb.path=/prometheus/"
@@ -59,4 +91,5 @@ spec:
             name: prom-conf
 
         - name: prometheus-storage-volume
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: loadtest-prom-persist

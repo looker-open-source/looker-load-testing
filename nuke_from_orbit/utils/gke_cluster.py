@@ -23,6 +23,62 @@ def get_compute_client(credentials=None):
     return client
 
 
+def create_zonal_disk(name, project, zone, client):
+    """Creates a persistant disk in the specified zone. This is suitable for use as
+    a persistant volume for Prometheus data. Returns an operation id that can be
+    used to track the job progress.
+    """
+
+    # https://cloud.google.com/compute/docs/reference/rest/v1/disks/get
+
+    body = {"name": name, "sizeGb": 50}
+    zonal_disk = client.disks()
+    request = zonal_disk.insert(project=project, zone=zone, body=body)
+    response = request.execute()
+
+    return response["name"]
+
+
+def fetch_zonal_disk(name, project, zone, client):
+    """Attempts to fetch a specified persistant disk. Accepts the name of the
+    disk, the project and zone. If the disk exists the name is returned.
+    """
+
+    zonal_disk = client.disks()
+    request = zonal_disk.get(project=project, zone=zone, disk=name)
+    response = request.execute()
+
+    return response
+
+
+def delete_zonal_disk(name, project, zone, client):
+    """Deletes a persistant disk in the specified zone. Returns an operation that
+    can be used to track the job progress.
+    """
+
+    # https://cloud.google.com/compute/docs/reference/rest/v1/disks/get
+
+    zonal_disk = client.disks()
+    request = zonal_disk.delete(project=project, zone=zone, disk=name)
+    response = request.execute()
+
+    return response["name"]
+
+
+def compute_zonal_task_status(task_name, project, zone, client):
+    """Accepts a compute zonal operation name and requests the status of the operation.
+    Returns a string of the job status. Possible values are 'PENDING', 'RUNNING'
+    and 'DONE'
+    """
+
+    # https://cloud.google.com/compute/docs/reference/rest/v1/globalOperations/get
+    zonal_operations = client.zoneOperations()
+    request = zonal_operations.get(project=project, zone=zone, operation=task_name)
+    response = request.execute()
+
+    return response["status"]
+
+
 def create_global_ip(name, project, client):
     """Creates a global ip address suitable for use with GKE ingress controller.
     Returns a job ID that can be used to track the status of the address creation.
