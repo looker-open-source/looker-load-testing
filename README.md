@@ -53,7 +53,11 @@ First, you will need access to GCP and have Editor access to a GCP Project
 You will need a working version of python 3.8+. I would recommend making use of [pyenv](https://github.com/pyenv/pyenv) to manage your Python
 installations.
 
+For the moment you will need to use developer installation workflows (this will change soon). This means you will need
+[poetry](https://python-poetry.org/docs/) to handle the installation.
+
 You will also need [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/), the command line tool for interacting with kubernetes
+
 
 Finally, in order to access your NFO instance via the web you will need to own or have control of a registered domain. You should
 have the ability to create an A-Record from that domain's DNS.
@@ -116,12 +120,14 @@ In your development environment, clone the load testing repo:
 
 ### Install Python libraries
 
-It is strongly recommended you create a new virtual environment for this project. From the project root directory use
-pip to install the required libraries:
+From the project root directory use poetry to install the required libraries. This will also create a virtual
+environment for you.
 
-    $ pip install .
+    $ poetry install
 
-(If you make use of [poetry](https://python-poetry.org/) you can run `poetry install` and have it handle the virtualenv for you)
+After the install completes you can access this new virtual environment with the following command:
+
+    $ poetry shell
 
 
 ## Deploy The Load Tester
@@ -281,6 +287,22 @@ nuke-from-orbit directory:
 You will likely want to clean up your DNS entry as well.
 
 To kick off another test simply rerun the `nuke setup` command and you're back in business!
+
+## Persistent Test Data
+
+By default, NFO deploys a special storage disk that is used as a persistent volume to store locust data. This disk does
+not get torn down with the rest of the cluster and will get re-attached when the same config file is used to deploy a
+new cluster. The intention of this disk is to allow for test data to "survive" cluster teardowns without the need to
+keep your expensive kubernetes infrastructure running. Each test config (as defined by the config yaml) will have its
+own disk created.
+
+Should you wish to export your Locust test data to another source (e.g. BigQuery etc.) you can make use of the
+[Prometheus API](https://prometheus.io/docs/prometheus/latest/querying/api/)
+
+Should you wish to remove the persistent disk during teardown you can make use of the `--all` flag in the teardown
+command:
+
+    $ nuke teardown --config-file config.yaml --all
 
 ## Local Mode
 
