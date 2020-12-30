@@ -45,7 +45,10 @@ def main(**kwargs):
     if external:
         ip = nuke_utils.get_ip_address(user_config)
         dns = user_config["loadtest_dns_domain"]
-        ip_message = f"Cluster IP is {ip}. Please create an A Record in your DNS provider for *.{dns} that points to {ip}."
+        ip_message = (
+            f"Cluster IP is {ip}.\n"
+            f"Please create an A Record in your DNS provider for *.{dns} that points to {ip}.\n\n"
+        )
 
     # parse and render kubernetes template files
     file_list = nuke_utils.collect_kube_yaml_templates(external)
@@ -74,7 +77,7 @@ def main(**kwargs):
         f"export GOOGLE_APPLICATION_CREDENTIALS={str(service_account_file)}\n\n"
     )
     port_forward_message = (
-        "You can now use `kubectl port-forward` commands."
+        "You can now use `kubectl port-forward` commands. "
         "This will allow you to access your load test services directly. Read more here:\n"
         "https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster\n\n"
         "All services are available on port 80. Find services with `kubectl get svc`. Then forward to a desired port.\n"
