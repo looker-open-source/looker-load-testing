@@ -489,11 +489,8 @@ def compare_tags(new_tag):
     If the tags are the same then an exception is raised. Returns 1 if the tags are distinct.
     """
 
-    # fetch kubeconfig file. Convert to a string for kubernetes client compatibility
-    kubeconfig = str(SCRIPT_PATH.joinpath("rendered", "kubeconfig.yaml"))
-
     # fetch the current lm-pod deployment info
-    locust_deployment = kubernetes_deploy.get_deployment("lm-pod", kubeconfig)
+    locust_deployment = kubernetes_deploy.get_deployment("lm-pod")
 
     # parse the image tag from the container
     image = locust_deployment.spec.template.spec.containers[0].image

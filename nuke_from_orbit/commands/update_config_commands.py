@@ -17,12 +17,12 @@ def main(**kwargs):
     service_account_file = sa_dir.joinpath(user_config["gcp_service_account_file"]).resolve()
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(service_account_file)
 
+    # set kubernetes context
+    nuke_utils.set_kubernetes_context(user_config)
+
     # parse and render kubernetes template files
     file_list = nuke_utils.collect_kube_yaml_templates()
     nuke_utils.render_kubernetes_templates(user_config, file_list)
-
-    # set kubernetes context
-    nuke_utils.set_kubernetes_context(user_config)
 
     # deploy secrets
     nuke_utils.deploy_looker_secret(user_config)
