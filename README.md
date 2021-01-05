@@ -8,8 +8,12 @@ use, and approachable for just about anybody who wants to answer questions about
 NFO is designed to perform either API-based or Browser-based load testing via distributed Kubernetes clusters in the
 cloud (hence the name -  we're raining fire from the clouds...).
 
-NFO is a python application - it makes use of the battle-tested [Locust.io](https://locust.io/) framework and adds
+NFO is a Python application - it makes use of the battle-tested [Locust.io](https://locust.io/) framework and adds
 the ability to run browser-based tests in a containerized/orchestrated environment (i.e. kubernetes).
+
+## Status and Support
+
+NFO is NOT supported or warranteed by Looker in any way. Please do not contact Looker support for issues with NFO.
 
 ## Why browser-based tests?
 
