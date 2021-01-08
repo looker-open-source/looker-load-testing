@@ -1,5 +1,4 @@
 import tarfile
-#  import time
 from pathlib import Path
 from nuke_from_orbit.utils import cloud_build
 from google.cloud.devtools import cloudbuild
