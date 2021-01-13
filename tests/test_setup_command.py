@@ -218,17 +218,7 @@ def test_main_set_k8s_context(mocker):
 
 def test_main_deploy_looker_secret(mocker):
 
-    set_context_called = 0
-    read_context = 0
-
-    def context_called(*args, **kwargs):
-        nonlocal set_context_called
-        set_context_called = 1
-
-    def read_context(*args, **kwargs):
-        nonlocal set_context_called
-        nonlocal read_context
-        read_context = set_context_called
+    parent_mock = mocker.Mock()
 
     mocker.patch("nuke_from_orbit.utils.nuke_utils.set_variables").return_value = MOCK_USER_CONFIG
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_gke")
@@ -238,33 +228,27 @@ def test_main_deploy_looker_secret(mocker):
     mocker.patch("nuke_from_orbit.utils.nuke_utils.get_ip_address")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.collect_kube_yaml_templates")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.render_kubernetes_templates")
-    mocker.patch("nuke_from_orbit.utils.nuke_utils.set_kubernetes_context", side_effect=context_called)
-    mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_looker_secret", side_effect=read_context)
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_oauth_secret")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_external")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_locust")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_secondary")
 
+    context_mock = mocker.patch("nuke_from_orbit.utils.nuke_utils.set_kubernetes_context")
+    deploy_mock = mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_looker_secret")
+
+    parent_mock.attach_mock(context_mock, "context_mock")
+    parent_mock.attach_mock(deploy_mock, "deploy_mock")
+
     setup_commands.main(config_file="mock_config.yaml", external=True, persistence=False)
 
     # determine if context call occurs before deployment
-    assert read_context == 1
-    nuke_utils.deploy_looker_secret.assert_called_with(MOCK_USER_CONFIG)
+    expected_call_order = [mocker.call.context_mock(MOCK_USER_CONFIG), mocker.call.deploy_mock(MOCK_USER_CONFIG)]
+    assert parent_mock.mock_calls == expected_call_order
 
 
 def test_main_deploy_oauth_secret_external(mocker):
 
-    set_context_called = 0
-    read_context = 0
-
-    def context_called(*args, **kwargs):
-        nonlocal set_context_called
-        set_context_called = 1
-
-    def read_context(*args, **kwargs):
-        nonlocal set_context_called
-        nonlocal read_context
-        read_context = set_context_called
+    parent_mock = mocker.Mock()
 
     mocker.patch("nuke_from_orbit.utils.nuke_utils.set_variables").return_value = MOCK_USER_CONFIG
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_gke")
@@ -274,33 +258,25 @@ def test_main_deploy_oauth_secret_external(mocker):
     mocker.patch("nuke_from_orbit.utils.nuke_utils.get_ip_address")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.collect_kube_yaml_templates")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.render_kubernetes_templates")
-    mocker.patch("nuke_from_orbit.utils.nuke_utils.set_kubernetes_context", side_effect=context_called)
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_looker_secret")
-    mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_oauth_secret", side_effect=read_context)
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_external")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_locust")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_secondary")
 
+    context_mock = mocker.patch("nuke_from_orbit.utils.nuke_utils.set_kubernetes_context")
+    deploy_mock = mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_oauth_secret")
+
+    parent_mock.attach_mock(context_mock, "context_mock")
+    parent_mock.attach_mock(deploy_mock, "deploy_mock")
+
     setup_commands.main(config_file="mock_config.yaml", external=True, persistence=False)
 
     # determine if context call occurs before deployment
-    assert read_context == 1
-    nuke_utils.deploy_oauth_secret.assert_called_with(MOCK_USER_CONFIG)
+    expected_call_order = [mocker.call.context_mock(MOCK_USER_CONFIG), mocker.call.deploy_mock(MOCK_USER_CONFIG)]
+    assert parent_mock.mock_calls == expected_call_order
 
 
 def test_main_deploy_oauth_secret_no_external(mocker):
-
-    set_context_called = 0
-    read_context = 0
-
-    def context_called(*args, **kwargs):
-        nonlocal set_context_called
-        set_context_called = 1
-
-    def read_context(*args, **kwargs):
-        nonlocal set_context_called
-        nonlocal read_context
-        read_context = set_context_called
 
     mocker.patch("nuke_from_orbit.utils.nuke_utils.set_variables").return_value = MOCK_USER_CONFIG
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_gke")
@@ -310,9 +286,9 @@ def test_main_deploy_oauth_secret_no_external(mocker):
     mocker.patch("nuke_from_orbit.utils.nuke_utils.get_ip_address")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.collect_kube_yaml_templates")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.render_kubernetes_templates")
-    mocker.patch("nuke_from_orbit.utils.nuke_utils.set_kubernetes_context", side_effect=context_called)
+    mocker.patch("nuke_from_orbit.utils.nuke_utils.set_kubernetes_context")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_looker_secret")
-    mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_oauth_secret", side_effect=read_context)
+    mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_oauth_secret")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_external")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_locust")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_secondary")
@@ -324,17 +300,7 @@ def test_main_deploy_oauth_secret_no_external(mocker):
 
 def test_main_deploy_external(mocker):
 
-    set_context_called = 0
-    read_context = 0
-
-    def context_called(*args, **kwargs):
-        nonlocal set_context_called
-        set_context_called = 1
-
-    def read_context(*args, **kwargs):
-        nonlocal set_context_called
-        nonlocal read_context
-        read_context = set_context_called
+    parent_mock = mocker.Mock()
 
     mocker.patch("nuke_from_orbit.utils.nuke_utils.set_variables").return_value = MOCK_USER_CONFIG
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_gke")
@@ -344,33 +310,25 @@ def test_main_deploy_external(mocker):
     mocker.patch("nuke_from_orbit.utils.nuke_utils.get_ip_address")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.collect_kube_yaml_templates")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.render_kubernetes_templates")
-    mocker.patch("nuke_from_orbit.utils.nuke_utils.set_kubernetes_context", side_effect=context_called)
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_looker_secret")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_oauth_secret")
-    mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_external", side_effect=read_context)
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_locust")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_secondary")
+
+    context_mock = mocker.patch("nuke_from_orbit.utils.nuke_utils.set_kubernetes_context")
+    deploy_mock = mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_external")
+
+    parent_mock.attach_mock(context_mock, "context_mock")
+    parent_mock.attach_mock(deploy_mock, "deploy_mock")
 
     setup_commands.main(config_file="mock_config.yaml", external=True, persistence=False)
 
     # determine if context call occurs before deployment
-    assert read_context == 1
-    nuke_utils.deploy_external.assert_called_with()
+    expected_call_order = [mocker.call.context_mock(MOCK_USER_CONFIG), mocker.call.deploy_mock()]
+    assert parent_mock.mock_calls == expected_call_order
 
 
 def test_main_deploy_external_no_external(mocker):
-
-    set_context_called = 0
-    read_context = 0
-
-    def context_called(*args, **kwargs):
-        nonlocal set_context_called
-        set_context_called = 1
-
-    def read_context(*args, **kwargs):
-        nonlocal set_context_called
-        nonlocal read_context
-        read_context = set_context_called
 
     mocker.patch("nuke_from_orbit.utils.nuke_utils.set_variables").return_value = MOCK_USER_CONFIG
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_gke")
@@ -380,10 +338,10 @@ def test_main_deploy_external_no_external(mocker):
     mocker.patch("nuke_from_orbit.utils.nuke_utils.get_ip_address")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.collect_kube_yaml_templates")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.render_kubernetes_templates")
-    mocker.patch("nuke_from_orbit.utils.nuke_utils.set_kubernetes_context", side_effect=context_called)
+    mocker.patch("nuke_from_orbit.utils.nuke_utils.set_kubernetes_context")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_looker_secret")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_oauth_secret")
-    mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_external", side_effect=read_context)
+    mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_external")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_locust")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_secondary")
 
@@ -395,17 +353,7 @@ def test_main_deploy_external_no_external(mocker):
 
 def test_main_deploy_locust(mocker):
 
-    set_context_called = 0
-    read_context = 0
-
-    def context_called(*args, **kwargs):
-        nonlocal set_context_called
-        set_context_called = 1
-
-    def read_context(*args, **kwargs):
-        nonlocal set_context_called
-        nonlocal read_context
-        read_context = set_context_called
+    parent_mock = mocker.Mock()
 
     mocker.patch("nuke_from_orbit.utils.nuke_utils.set_variables").return_value = MOCK_USER_CONFIG
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_gke")
@@ -415,33 +363,27 @@ def test_main_deploy_locust(mocker):
     mocker.patch("nuke_from_orbit.utils.nuke_utils.get_ip_address")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.collect_kube_yaml_templates")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.render_kubernetes_templates")
-    mocker.patch("nuke_from_orbit.utils.nuke_utils.set_kubernetes_context", side_effect=context_called)
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_looker_secret")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_oauth_secret")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_external")
-    mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_locust", side_effect=read_context)
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_secondary")
+
+    context_mock = mocker.patch("nuke_from_orbit.utils.nuke_utils.set_kubernetes_context")
+    deploy_mock = mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_locust")
+
+    parent_mock.attach_mock(context_mock, "context_mock")
+    parent_mock.attach_mock(deploy_mock, "deploy_mock")
 
     setup_commands.main(config_file="mock_config.yaml", external=True, persistence=False)
 
     # determine if context call occurs before deployment
-    assert read_context == 1
-    nuke_utils.deploy_locust.assert_called_with()
+    expected_call_order = [mocker.call.context_mock(MOCK_USER_CONFIG), mocker.call.deploy_mock()]
+    assert parent_mock.mock_calls == expected_call_order
 
 
 def test_main_deploy_secondary(mocker):
 
-    set_context_called = 0
-    read_context = 0
-
-    def context_called(*args, **kwargs):
-        nonlocal set_context_called
-        set_context_called = 1
-
-    def read_context(*args, **kwargs):
-        nonlocal set_context_called
-        nonlocal read_context
-        read_context = set_context_called
+    parent_mock = mocker.Mock()
 
     mocker.patch("nuke_from_orbit.utils.nuke_utils.set_variables").return_value = MOCK_USER_CONFIG
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_gke")
@@ -451,15 +393,19 @@ def test_main_deploy_secondary(mocker):
     mocker.patch("nuke_from_orbit.utils.nuke_utils.get_ip_address")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.collect_kube_yaml_templates")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.render_kubernetes_templates")
-    mocker.patch("nuke_from_orbit.utils.nuke_utils.set_kubernetes_context", side_effect=context_called)
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_looker_secret")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_oauth_secret")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_external")
     mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_locust")
-    mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_secondary", side_effect=read_context)
+
+    context_mock = mocker.patch("nuke_from_orbit.utils.nuke_utils.set_kubernetes_context")
+    deploy_mock = mocker.patch("nuke_from_orbit.utils.nuke_utils.deploy_secondary")
+
+    parent_mock.attach_mock(context_mock, "context_mock")
+    parent_mock.attach_mock(deploy_mock, "deploy_mock")
 
     setup_commands.main(config_file="mock_config.yaml", external=True, persistence=False)
 
     # determine if context call occurs before deployment
-    assert read_context == 1
-    nuke_utils.deploy_secondary.assert_called_with()
+    expected_call_order = [mocker.call.context_mock(MOCK_USER_CONFIG), mocker.call.deploy_mock()]
+    assert parent_mock.mock_calls == expected_call_order
