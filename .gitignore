@@ -9,3 +9,4 @@ nuke_from_orbit/utils/rendered/locust*.yaml
 nuke_from_orbit/utils/rendered/prometheus*.yaml
 nuke_from_orbit/utils/rendered/config-default.yaml
 nuke_from_orbit/utils/rendered/kubeconfig.yaml
+.coverage
