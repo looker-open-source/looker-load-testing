@@ -157,7 +157,7 @@ In order for NFO to authenticate to GCP correctly you must copy the service acco
 
 ### Set Config Parameters
 
-Navigate to the nuke-from-orbit directory and create a json file called ‘config.yaml’. You’ll need to add entries for the following items:
+Navigate to the nuke-from-orbit/configs directory and create a json file called ‘config.yaml’. You’ll need to add entries for the following items:
 
 * **gke_cluster**
   - **gcp_project_id**: The project ID of your GCP project
