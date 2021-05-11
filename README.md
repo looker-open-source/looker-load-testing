@@ -260,7 +260,7 @@ you will be able to access your load tester at `https://locust.my-loadtest.compa
 Scaling up the number of simulated users will require an increase in the number of Locust
 worker pods. To increase the number of pods deployed by the deployment, Kubernetes offers the ability to resize
 deployments without redeploying them. This can be done by editing the `loadtest_worker_count` field in the config
-file and triggering a config update (see above). You can also make use of imperitive `kubectl` commands. For
+file and triggering a config update (see above). You can also make use of imperative `kubectl` commands. For
 example, the following command scales the pool of Locust worker pods to 20:
 
         $ kubectl scale deployment/lw-pod --replicas=20
