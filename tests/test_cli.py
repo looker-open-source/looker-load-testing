@@ -4,9 +4,9 @@ from nuke_from_orbit.commands import update_config_commands, update_test_command
 from click.testing import CliRunner
 
 
-def test_nuke():
+def test_nfo():
     runner = CliRunner()
-    result = runner.invoke(cli.nuke)
+    result = runner.invoke(cli.nfo)
     assert result.exit_code == 0
 
 
