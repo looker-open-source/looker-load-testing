@@ -5,11 +5,11 @@ from nuke_from_orbit.commands import update_config_commands, update_test_command
 
 @click.group()
 @click.version_option()
-def nuke():
+def nfo():
     pass
 
 
-@nuke.command()
+@nfo.command()
 @click.option("--config-file", help="Which config file to use for the setup", required=True)
 @click.option("--external", is_flag=True, help="Should external ingress be set up")
 @click.option("--persistence/--no-persistence", default=True, help="Should persistent disk setup be skipped?")
@@ -17,14 +17,14 @@ def setup(**kwargs):
     setup_commands.main(**kwargs)
 
 
-@nuke.command()
+@nfo.command()
 @click.option("--config-file", help="Which config file to use for the setup", required=True)
 @click.option("--all", is_flag=True, help="Should teardown include persistent disk")
 def teardown(**kwargs):
     teardown_commands.main(**kwargs)
 
 
-@nuke.group()
+@nfo.group()
 def update():
     pass
 

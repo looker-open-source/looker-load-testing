@@ -1,12 +1,12 @@
 ## Introduction
 
-![nuke-from-orbit](https://i.imgflip.com/1o9ejc.jpg)
+![nfo](https://i.imgflip.com/1o9ejc.jpg)
 
-Nuke From Orbit (aka NFO) is a framework for load testing Looker instances. It is designed to be easy to set up, easy to
+NFO is a framework for load testing Looker instances. It is designed to be easy to set up, easy to
 use, and approachable for just about anybody who wants to answer questions about how their infrastructure is performing.
 
 NFO is designed to perform either API-based or Browser-based load testing via distributed Kubernetes clusters in the
-cloud (hence the name -  we're raining fire from the clouds...).
+cloud.
 
 NFO is a Python application - it makes use of the battle-tested [Locust.io](https://locust.io/) framework and adds
 the ability to run browser-based tests in a containerized/orchestrated environment (i.e. kubernetes).
@@ -157,7 +157,7 @@ In order for NFO to authenticate to GCP correctly you must copy the service acco
 
 ### Set Config Parameters
 
-Navigate to the nuke-from-orbit/configs directory and create a json file called ‘config.yaml’. You’ll need to add entries for the following items:
+Navigate to the configs directory and create a yaml file called ‘config.yaml’. You’ll need to add entries for the following items:
 
 * **gke_cluster**
   - **gcp_project_id**: The project ID of your GCP project
@@ -210,9 +210,9 @@ external:
 
 ### Deploy!
 
-Navigate to the nuke-from-orbit directory and kick off the deployment!
+Navigate to the root directory and kick off the deployment!
 
-    $ nuke setup --config-file config.yaml --external
+    $ nfo setup --config-file config.yaml --external
 
 > ★ Tip: The script will take around 5 minutes to complete depending on what kind of instances it’s creating.
 
@@ -230,7 +230,7 @@ Since the test script is a part of the container you build and deploy any update
 building and deploying a new container. This process has been automated with an `update` command. Make your required
 changes to the test script and then run the following command:
 
-    $ nuke update test --config-file config.yaml --tag <tag>
+    $ nfo update test --config-file config.yaml --tag <tag>
 
 This will rebuild the container and execute the correct steps to update the kubernetes deployment. These changes will be
 available immediately upon completion of the command - no need to redeploy the ingress or wait for DNS this time around!
@@ -243,7 +243,7 @@ available immediately upon completion of the command - no need to redeploy the i
 
 If your updates involve changes to just the config you can make use of the following command:
 
-    $ nuke update config --config-file config.yaml
+    $ nfo update config --config-file config.yaml
 
 This will redeploy the master/worker deployments with the updated config - this is even faster than the test update
 command since there's no need to build a new container image!
@@ -284,13 +284,13 @@ parameter! NFO will handle setting up your kubectl context for you.
 ## Cleaning up
 
 Once you are done load testing and exporting data you can tear down your cluster to avoid additional costs. From the
-nuke-from-orbit directory:
+root directory:
 
-    $ nuke teardown --config-file config.yaml
+    $ nfo teardown --config-file config.yaml
 
 You will likely want to clean up your DNS entry as well.
 
-To kick off another test simply rerun the `nuke setup` command and you're back in business!
+To kick off another test simply rerun the `nfo setup` command and you're back in business!
 
 ## Persistent Test Data
 
@@ -306,7 +306,7 @@ Should you wish to export your Locust test data to another source (e.g. BigQuery
 Should you wish to remove the persistent disk during teardown you can make use of the `--all` flag in the teardown
 command:
 
-    $ nuke teardown --config-file config.yaml --all
+    $ nfo teardown --config-file config.yaml --all
 
 ## Local Mode
 
