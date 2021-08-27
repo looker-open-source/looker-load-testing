@@ -1,7 +1,5 @@
 ## Introduction
 
-![nfo](https://i.imgflip.com/1o9ejc.jpg)
-
 NFO is a framework for load testing Looker instances. It is designed to be easy to set up, easy to
 use, and approachable for just about anybody who wants to answer questions about how their infrastructure is performing.
 
