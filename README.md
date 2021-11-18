@@ -117,7 +117,7 @@ assets of course)
 
 In your development environment, clone the load testing repo:
 
-    $ git clone https://github.com/llooker/looker-load-testing.git
+    $ git clone https://github.com/looker-open-source/looker-load-testing.git
     $ cd looker-load-testing
 
 ### Install Python libraries
